@@ -1,0 +1,53 @@
+"Limitar Períodos:","...2","Actualizar Tablas","...4","...5","...6","cve_institucion","040133"
+"ultimo periodo",NA,"SI",NA,NA,NA,"cve_periodo","202504"
+"periodo anterior",NA,NA,NA,NA,NA,NA,NA
+"Incluir Sofomes",NA,NA,NA,NA,NA,"Suma de numero_tarjetas",NA
+"Excluir Virtuales",NA,NA,NA,NA,NA,"rango_limite_credito","Total"
+NA,NA,NA,NA,NA,NA,"17","17"
+NA,NA,NA,NA,NA,NA,"18","8"
+NA,NA,NA,NA,NA,NA,"19","11"
+NA,NA,NA,NA,NA,NA,"20","2"
+NA,NA,NA,NA,NA,NA,"21","14"
+NA,NA,NA,NA,NA,NA,"22","32"
+NA,NA,NA,NA,NA,NA,"23","24"
+"Suma de Expr",NA,NA,NA,NA,NA,"24","57"
+"id","dl_institucion","cve_institucion","tipo","Total",NA,"25","58"
+"1","Actinver","040133","I","0",NA,NA,NA
+"2","Afirme","040062","I","0",NA,NA,NA
+"3","American Express","040103","I","0",NA,NA,NA
+"4","Banamex","040002","I","0",NA,NA,NA
+"5","Banca Mifel","040042","I","0",NA,NA,NA
+"6","Banco Ahorro Famsa","040131","I","0",NA,NA,NA
+"7","Banco Azteca","040127","I","0",NA,NA,NA
+"8","Banco Bineo","040165","I","0",NA,NA,NA
+"9","Banco del Bajío","040030","I","0",NA,NA,NA
+"10","Banco Wal-Mart","040134","I","0",NA,NA,NA
+"11","Bancoppel","040137","I","0",NA,NA,NA
+"12","Banjército","037019","I","0",NA,NA,NA
+"13","Banorte","040072","I","0",NA,NA,NA
+"14","Banorte-Ixe Tarjetas","068019","I","0",NA,NA,NA
+"15","Banregio","040058","I","0",NA,NA,NA
+"16","BBVA México","040012","I","0",NA,NA,NA
+"17","BNP Paribas Personal Finance","067054","I","0",NA,NA,NA
+"18","CIBanco","040143","I","0",NA,NA,NA
+"19","Comercios Afiliados","068038","I","0",NA,NA,NA
+"20","Consubanco","040140","I","0",NA,NA,NA
+"21","Crédito Familiar","068030","I","0",NA,NA,NA
+"22","Dondé Banco","040151","I","0",NA,NA,NA
+"23","Forjadores","040149","I","0",NA,NA,NA
+"24","Globalcard","068012","I","0",NA,NA,NA
+"25","HSBC","040021","I","0",NA,NA,NA
+"26","Interacciones","040037","I","0",NA,NA,NA
+"27","Intercam Banco","040136","I","0",NA,NA,NA
+"28","Invex","040059","I","0",NA,NA,NA
+"29","Invex Consumo","068072","I","0",NA,NA,NA
+"30","Openbank","040169","I","0",NA,NA,NA
+"31","Santander","040014","I","0",NA,NA,NA
+"32","Santander Consumo","068018","I","0",NA,NA,NA
+"33","Santander Inclusión Financiera","068069","I","0",NA,NA,NA
+"34","Scotiabank","040044","I","0",NA,NA,NA
+"35","Servicios Financieros Soriana","068022","I","0",NA,NA,NA
+"36","Sociedad Financiera Inbursa","068009","I","0",NA,NA,NA
+"37","Sofom Inbursa","068028","I","0",NA,NA,NA
+"38","Tarjetas Banamex","068014","I","0",NA,NA,NA
+"39","Ualá","040138","I","0",NA,NA,NA
