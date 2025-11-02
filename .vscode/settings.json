@@ -1,3 +1,9 @@
 {
-    "python-envs.pythonProjects": []
+    "python-envs.pythonProjects": [],
+    "workbench.editor.tabActionCloseVisibility": true,
+    "workbench.editor.pinnedTabsOnSeparateRow": false,
+    "workbench.editor.scrollToSwitchTabs": false,
+    "workbench.editor.wrapTabs": false,
+    "workbench.editor.enablePreviewFromCodeNavigation": false,
+    "workbench.editor.enablePreviewFromQuickOpen": false
 }
