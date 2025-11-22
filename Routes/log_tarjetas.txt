@@ -1,0 +1,23 @@
+Log de rutas generado el 2025-11-20 21:53:03
+Carpeta base: c:\Users\espar\Desktop\Portafolio\TDCBanksMx\Data\datosTarjetasCredito
+
+01. 040_12d_R1_Número de tarjetas de crédito por institución.xls
+02. 040_12d_R2_Saldo de tarjetas de crédito por institución.xls
+03. 040_12e_R10_Distribución de tarjetas por probabilidad de incumplimiento.xls
+04. 040_12e_R11_Distribución de tarjetas por impagos consecutivos.xls
+05. 040_12e_R1_Distribución de tarjetas por límite de crédito.xls
+06. 040_12e_R2_Distribución de tarjetas por porcentaje de uso de línea.xls
+07. 040_12e_R3_Distribución de tarjetas por porcentaje de pago mínimo exigido con respecto al saldo a pagar.xls
+08. 040_12e_R4_Distribución de tarjetas por porcentaje de pago realizado con respecto al saldo a pagar.xls
+09. 040_12e_R50_Distribución de tarjetas por porcentaje de pago mínimo respecto a la línea de crédito.xls
+10. 040_12e_R5_Distribución de tarjetas por porcentaje de pago realizado vs pago mínimo exigido.xls
+11. 040_12e_R6_Consumo Revolvente Distribución de tarjetas por porcentaje de pago para no generar intereses con respecto al saldo a pagar.xls
+12. 040_12e_R7_Consumo Revolvente Distribución de tarjetas por porcentaje de pago realizado vs pago para no generar intereses.xls
+13. 040_12e_R8_Consumo Revolvente Distribución de tarjetas por meses transcurridos desde la apertura de la cuenta.xls
+14. 040_12e_R9_Consumo Revolvente Distribución de tarjetas por pérdida esperada.xls
+15. 040_12h_R1_Tasas de interés por pérdida esperada.xls
+16. 040_12h_R2_Porcentaje de uso de línea por pérdida esperada.xls
+17. 040_12h_R3_Porcentaje de pago mínimo entre saldo a pagar por pérdida esperada.xls
+18. 040_12h_R5_Porcentaje de pago realizado entre pago mínimo por pérdida esperada.xls
+19. 040_12h_R8_Impagos consecutivos por pérdida esperada.xls
+20. 040_12h_R9_Meses transcurridos desde la apertura por pérdida esperada.xls

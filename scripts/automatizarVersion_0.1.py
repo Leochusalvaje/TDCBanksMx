@@ -167,6 +167,6 @@ def limpieza_datos_por_archivo(rutaArchivoParaLimpiar,NumerodeBimestresEnArchivo
 x=gv.ARCHIVOS_DATOSTARJETASCREDITO
 
 #sigue el 17
-print(x[20])
+print(x[16])
 print(len(x))
-limpieza_datos_por_archivo(x[20],85)
+limpieza_datos_por_archivo(x[16],85)
