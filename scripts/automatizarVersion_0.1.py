@@ -131,10 +131,11 @@ def limpieza_datos_por_archivo(rutaArchivoParaLimpiar,NumerodeBimestresEnArchivo
 
     while contador < max_iteraciones:
             valor_actual = ws_cnbv.Range("D37").Value
-
+            time.sleep(0.5)
                 # Aquí llamas a tu función de clicks, por ejemplo:
             if contador==0:
                 print("Celda vacía, ejecutando clicks...")  
+                time.sleep(0.5)
                 moveToClickAndWait(coord_desmarcar[0],coord_desmarcar[1],0,0)
                 #algunos archivos de la cnbv no es necesario marcar y desmarcar la casilal de bancos para selccioanr todos basta con un solo marcado
                 #agregar o quitar la siguiente linea segun sea el caso
@@ -167,6 +168,6 @@ def limpieza_datos_por_archivo(rutaArchivoParaLimpiar,NumerodeBimestresEnArchivo
 x=gv.ARCHIVOS_DATOSTARJETASCREDITO
 
 #sigue el 17
-print(x[16])
-print(len(x))
-limpieza_datos_por_archivo(x[16],85)
+#print(x[10])
+#print(len(x))
+limpieza_datos_por_archivo(x[10],85)

@@ -136,8 +136,9 @@ def fix_long_path(ruta: str) -> str:
             ruta = '\\\\?\\' + ruta
     return ruta
 
+
 ARCHIVOS_DENTRO_CARPETAS_OUTPUT=[]
 for i in RUTAS_OUTPUT_CONSULTAS:
     c=rutas_de_archivos_en_carpeta(i)
     ARCHIVOS_DENTRO_CARPETAS_OUTPUT.append(c)
-print(ARCHIVOS_DENTRO_CARPETAS_OUTPUT[1][0])
+print(ARCHIVOS_DATOSTARJETASCREDITO[10])
