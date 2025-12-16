@@ -3,13 +3,10 @@ import time
 import pandas as pd
 import openpyxl
 import win32com.client as win32
-import pygetwindow as gw
 import pyautogui
 import time
-import os
 import win32gui, win32con
 import routes as gv
-from pathlib import Path
 # -------------------------------
 # CONFIGURACIÓN
 # -------------------------------
