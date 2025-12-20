@@ -1,4 +1,5 @@
 import re
+import routes as gv
 from pathlib import Path
 from typing import List, Tuple
 
@@ -15,10 +16,10 @@ def renombrar_y_limpiar_archivos(ruta_carpeta: Path) -> List[Tuple[Path, Path]]:
     
     # Patrón de sustitución fijo:
     # Captura la cadena que quieres eliminar (incluyendo el guion bajo y el 'por').
-    PATRON_A_ELIMINAR = r'_Consumo_Revolvente_Distribucion_de_tarjetas_por_meses_transcurridos_desde_la_apertura_de_la_cuenta_' 
+    PATRON_A_ELIMINAR = r'_Consumo_Revolvente_desde_la_apertura_de_la_cuenta_' 
     
     # Cadena de reemplazo: Guion bajo seguido de "Porcentaje" (la P en mayúscula)
-    CADENA_REEMPLAZO = r'_Consumo_Revolvente_desde_la_apertura_de_la_cuenta_' 
+    CADENA_REEMPLAZO = r'_Consumo_Revolvente_Distribución_por_meses_desde_apertura_' 
 
     for ruta_original in ruta_carpeta.iterdir():
         
@@ -46,8 +47,8 @@ def renombrar_y_limpiar_archivos(ruta_carpeta: Path) -> List[Tuple[Path, Path]]:
 # --- Ejemplo de Uso ---
 
 # NOTA: Asegúrate de que esta ruta apunte a la carpeta que contiene los archivos
-RUTA_A_PROCESAR = Path(r'C:\Users\espar\Desktop\Portafolio\TDCBanksMx\Output\040_12e_R8_Consumo_Revolvente_Distribucion_de_tarjetas_por_meses_transcurridos_desde_la_apertura_de_la_cuenta')
-
+RUTA_A_PROCESAR = gv.RUTAS_OUTPUT_CONSULTAS[12]
+print(RUTA_A_PROCESAR)
 resultados = renombrar_y_limpiar_archivos(RUTA_A_PROCESAR)
 
 print(f"Archivos renombrados: {len(resultados)}")

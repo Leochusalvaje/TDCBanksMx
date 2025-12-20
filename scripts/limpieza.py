@@ -1,7 +1,5 @@
 import pandas as pd
 import numpy as np
-import openpyxl
-import os
 import routes as gv
 from typing import Optional, Callable,Any
 
@@ -267,15 +265,37 @@ nombreIntervalo:str,
 #Pruebas
 #-------------------------------------------------------------------------------------------------------------------------------------->
 
-#Limpiar datos carpeta 3
+#Limpiar datos carpeta 3  040_12e_R10_Distribucion_de_tarjetas_por_probabilidad_de_incumplimiento_201106.xlsx
 #x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[2][0],"B:AO","Credit_Limit_Range_KMXN",Credit_Limit_Range_KMXN="category")
-#Limpiar Datos carpeta 2
+#Limpiar Datos carpeta 2 040_12d_R2_Saldo_de_tarjetas_de_credito_por_institucion_201106.xlsx
 #x=limpiar_datos_de_carpeta_040_12d_R2(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[1][0],"Credit_Card_Balance","B:C",Credit_Card_Balance="float64")
-#Limpiar datos carpeta 1
+#Limpiar datos carpeta 1 040_12d_R1_Numero_de_tarjetas_de_credito_por_institucion_201106.xlsx
 #x=limpiar_datos_de_carpeta_040_12d_R2(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[0][0],"Number_Of_Creditcards","B:C",Number_Of_Creditcards="int")
-
-#Limpiar datos carpeta 4
-#Credit_Utilization_Range
-#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[3][0],"B:AO","Credit_Utilization_Range")
-x=pd.read_excel(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[3][0])
-x.head()
+#Limpiar datos carpeta 4 040_12e_R11_Distribucion_de_tarjetas_por_impagos_consecutivos_201106.xlsx
+#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[3][0],"B:AO","Consecutive_Delinquency_Bucket",Consecutive_Delinquency_Bucket="category")
+#Limpiar datos carpeta 5 040_12e_R1_Distribucion_de_tarjetas_por_limite_de_credito_201106.xlsx Credit_Limit_Range_KMXN
+#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[4][0],"B:AO","Credit_Limit_Range_KMXN",Credit_Limit_Range_KMXN="category")
+#Limpiar datos carpeta 6 040_12e_R2_Distribucion_de_tarjetas_por_porcentaje_de_uso_de_linea_201106.xlsx Credit_Line_Utilization_Range_Pct
+#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[5][0],"B:AO","Credit_Line_Utilization_Range_Pct",Credit_Line_Utilization_Range_Pct="category")
+#Limpiar datos carpeta 7 040_12e_R3_Porcentaje_de_pago_minimo_exigido_con_respecto_al_saldo_a_pagar_201106.xlsx
+#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[6][0],"B:AO","Minimum_Payment_Percentage",Minimum_Payment_Percentage="category")
+#Limpiar datos carpeta 8 040_12e_R4_Porcentaje_de_pago_realizado_con_respecto_al_saldo_a_pagar_201106.xlsx
+#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[7][0],"B:AO","Actual_Payment_Percentage",Actual_Payment_Percentage="category")
+#x.head()
+#Limpiar datos carpeta 9 040_12e_R50_Distribucion_de_tarjetas_por_porcentaje_de_pago_minimo_respecto_a_la_linea_de_credito_201106.xlsx
+#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[8][0],"B:AO","Minimum_Payment_Percentage_Range",Minimum_Payment_Percentage_Range="category")
+#Limpiar datos carpeta 10 040_12e_R5_Porcentaje_de_pago_realizado_vs_pago_minimo_exigido_201106.xlsx
+#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[9][0],"B:AO","Actual_vs_Minimum_Payment_Percentage",Actual_vs_Minimum_Payment_Percentage="category")
+#Limpiar datos carpeta 11 040_12e_R6_ConsumoRevolvente_TarjetasPagoSinIntereses_201106.xlsx
+#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[10][0],"B:AO","Minimum_Payment_Ratio_Interval",Minimum_Payment_Ratio_Interval="category")
+#Limpiar datos carpeta 12 040_12e_R7_Consumo_Revolvente_Porcentaje_pago_realizado_vs_PPNGI_201106.xlsx
+#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[11][0],"B:AO","Payment_Balance_Ratio_Interval",Payment_Balance_Ratio_Interval="category")
+#Limpiar datos carpeta 13 040_12e_R8_Consumo_Revolvente_desde_la_apertura_de_la_cuenta_201106.xlsx
+#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[12][0],"B:AO","Months_Since_Opening",Months_Since_Opening="category")
+#Limpiar datos carpeta 14 040_12e_R9_Consumo_Revolvente_Distribucion_de_tarjetas_por_perdida_esperada_201106.xlsx
+#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[13][0],"B:AO","Expected_Loss_Range",Expected_Loss_Range="category")
+#-------------->ok
+#Limpiar datos carpeta 15 040_12h_R1_Tasas_de_interes_por_perdida_esperada_201106.xlsx
+#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[14][0],"B:AO","Expected_Loss_Range",Expected_Loss_Range="category")
+print(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[14][0].name)
+#x.head()

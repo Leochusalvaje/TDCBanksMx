@@ -1,4 +1,4 @@
-Log de rutas generado el 2025-12-14 19:17:16
+Log de rutas generado el 2025-12-17 20:56:27
 Carpeta base: c:\Users\espar\Desktop\Portafolio\TDCBanksMx\Data\datosTarjetasCredito
 
 01. 040_12d_R1_Número de tarjetas de crédito por institución.xls
@@ -11,9 +11,9 @@ Carpeta base: c:\Users\espar\Desktop\Portafolio\TDCBanksMx\Data\datosTarjetasCre
 08. 040_12e_R4_Distribución de tarjetas por porcentaje de pago realizado con respecto al saldo a pagar.xls
 09. 040_12e_R50_Distribución de tarjetas por porcentaje de pago mínimo respecto a la línea de crédito.xls
 10. 040_12e_R5_Distribución de tarjetas por porcentaje de pago realizado vs pago mínimo exigido.xls
-11. 040_12e_R6_ConsumoRevolvente_TarjetasPagoSinIntereses.xls
+11. 040_12e_R6_ConsumoRevolvente_Tarjetas_Pagominimo_vs_pagoRealizado.xls
 12. 040_12e_R7_Consumo Revolvente Distribución de tarjetas por porcentaje de pago realizado vs pago para no generar intereses.xls
-13. 040_12e_R8_Consumo Revolvente Distribución de tarjetas por meses transcurridos desde la apertura de la cuenta.xls
+13. 040_12e_R8_Consumo Revolvente Distribución por meses desde apertura.xls
 14. 040_12e_R9_Consumo Revolvente Distribución de tarjetas por pérdida esperada.xls
 15. 040_12h_R1_Tasas de interés por pérdida esperada.xls
 16. 040_12h_R2_Porcentaje de uso de línea por pérdida esperada.xls
