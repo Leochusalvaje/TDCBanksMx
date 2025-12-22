@@ -28,12 +28,25 @@ def rutas_de_archivos_en_carpeta(rutacarpeta):
         if i.is_file():
             mat.append(i)
     return mat
+#Compresion de listas
+# "Voy a recorrer cada ruta que encuentre en RUTA_OUTPUT.iterdir()..."
+# "...y por cada una de ellas, voy a fabricar un diccionario con estas 3 llaves..."
+# "...y el resultado final de todos esos diccionarios se guardará automáticamente en una lista llamada RUTAS_OUTPUT_BRONZE."
+RUTAS_Y_ARCHIVOS_OUTPUT_BRONZE=[
+    {"proceso":ruta.name,"ruta":ruta,"archivos":list(ruta.glob("*.xls*"))}
+    for ruta in RUTA_OUTPUT.iterdir()
+]
+
+#ARCHIVOS_DATA_RAW={str(RUTAS_DATA_TDC):[file for file in RUTAS_DATA_TDC.rglob("*.xls")]}
+
+ARCHIVOS_DATA_RAW=[
+    {"origen":archivos.name,"ruta":archivos}
+    for archivos in RUTAS_DATA_TDC.iterdir()
 
 
-ARCHIVOS_DATOSTARJETASCREDITO=[]
-for k in RUTAS_DATA_TDC.iterdir():
-    if k.is_file():
-        ARCHIVOS_DATOSTARJETASCREDITO.append(k)
+]
+
+
 
 
 def limpiar_texto(texto):
@@ -76,53 +89,7 @@ def generar_carpetas_de_una_lista_en_una_ruta(ruta,lista):
         lista_de_rutas.append(x)
         Path(x).mkdir(parents=True, exist_ok=True)
     return lista_de_rutas
-def generar_log_lista(lista_rutas, ruta_log):
-    fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(ruta_log, "w", encoding="utf-8") as f:
-        f.write(f"Log de rutas generado el {fecha}\n")
-        f.write(f"Carpeta base: {RUTAS_DATA_TDC}\n\n")
 
-        if not lista_rutas:
-            f.write(" No se encontraron archivos.\n")
-            return
-
-        for i, ruta in enumerate(lista_rutas, start=1):
-
-            f.write(f"{i:02d}. {ruta.name}\n")
-
-    print(f"Log generado correctamente en: {ruta_log}")
-
-def generar_log_prime(listaderutas,carpetapadre,rutadellog):
-    fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    #importante poner el modo de escritura para que cree el log si no encutra la ruat que le entregaste
-    #Usa ese encodign debido a que llevan acentos los nombres depsues se corregira eso
-    with open(rutadellog,mode="w", encoding="utf-8") as f:
-        f.write(f"Fecha de creacion del log: {fecha}\n\n")
-        try:
-            f.write(f"Carpeta Padre :{carpetapadre}\n\n")
-        finally:
-            f.write(f"La carpeta es la principal: {RUTA_BASE}\n\n")
-            for indice,ruta in enumerate(listaderutas,start=1):
-            # los ":" Indica que a continuación viene una especificación de formato.
-            # 0 Rellena con ceros a la izquierda si el número tiene menos dígitos.
-            # 2 Indica el ancho mínimo: siempre ocupará 2 espacios.
-            # d Especifica que el valor es un número entero decimal.
-            # :02d  <-----------
-            #recuera que ruta esta usando la libreria de path name y tiene el metodo name
-                f.write(f"{indice:02d}: {ruta.name} \n")
-
-
-
-
-# === Ejecutar ===
-if __name__ == "__main__":
-    RUTA_LOG_TXT = RUTA_PRIME / "log_tarjetas.txt"
-    generar_log_lista(ARCHIVOS_DATOSTARJETASCREDITO, RUTA_LOG_TXT)
-    generar_log_prime(ARCHIVOS_DATOSTARJETASCREDITO,RUTAS_DATA_TDC,RUTA_PRIME/"logprueba.txt")
-
-
-NOMBRES_ARCHIVOS_CONSULTADOS=obtener_lista_contenidas_en_carpetas(RUTAS_DATA_TDC)
-RUTAS_OUTPUT_CONSULTAS=generar_carpetas_de_una_lista_en_una_ruta(RUTA_OUTPUT,NOMBRES_ARCHIVOS_CONSULTADOS)
 
 
 
@@ -135,10 +102,3 @@ def fix_long_path(ruta: str) -> str:
         if not ruta.startswith('\\\\?\\'):
             ruta = '\\\\?\\' + ruta
     return ruta
-
-
-ARCHIVOS_DENTRO_CARPETAS_OUTPUT=[]
-for i in RUTAS_OUTPUT_CONSULTAS:
-    c=rutas_de_archivos_en_carpeta(i)
-    ARCHIVOS_DENTRO_CARPETAS_OUTPUT.append(c)
-print(ARCHIVOS_DATOSTARJETASCREDITO[10])

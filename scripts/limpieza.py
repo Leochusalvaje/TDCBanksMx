@@ -1,12 +1,14 @@
 import pandas as pd
 import numpy as np
 import routes as gv
-from typing import Optional, Callable,Any
+from typing import Optional, Callable,Any 
 
 
 #tipos de datos para tener mejor control como en el lenguaje de c++
 dtf=pd.DataFrame
 dts=pd.Series
+logicaDatos=Callable[..., pd.DataFrame]
+
 # df.iloc[fila, columna] -> Accede al valor por índice de fila y columna (0-indexed)
 # df["Columna"].iloc[fila] -> Accede al valor por nombre de columna y posición de fila
 # df.iat[fila, columna] -> Acceso rápido a un solo valor por índice de fila y columna
@@ -51,7 +53,14 @@ def recorrer_asignar_tipos(df:dtf,*tiposdedatos,**tipospordiccionario)->dtf:
             raise KeyError(f"Columnas inexistentes: {columnas_faltantes}")
         return df.astype(tipospordiccionario)
 
-    
+#Algunas conevrsiones de columna pueden fallar por lo que esta funcion intenta convertir a Int64 y si falla lo deja en Float64
+def conversion_segura(series):
+    try:
+
+        return series.astype("Int64")
+    except:
+        # Si falla, convertimos a Float64
+        return series.astype("Float64")    
 
 
 
@@ -184,7 +193,7 @@ def crear_columna_year_month(
 
     return df
 
-def limpiar_datos_de_carpeta_040_12d_R2(
+def limpiar_datos_largos(
         #Ruta donde se encuentra el archivo a limpiar
         ruta:str,
         #Nombre de la columna que vamos obtener la informacion
@@ -222,10 +231,10 @@ def abc(df):
 
 
 ##Carpeta 2 Limpia
-# unido=limpiar_datos_de_carpeta(limpiar_datos_de_carpeta_040_12d_R2,gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[1],transformacion_adicional=abc).fillna(0).rename(columns={"Banco":"banks"})
+# unido=limpiar_datos_de_carpeta(limpiar_datos_largos,gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[1],transformacion_adicional=abc).fillna(0).rename(columns={"Banco":"banks"})
 # unido.head(5)
 
-def limpiardatsetslargos(ruta:str,
+def limpiar_datos_anchos(ruta:str,
 
 colexcelexportar:str,
 nombreIntervalo:str,
@@ -252,7 +261,7 @@ nombreIntervalo:str,
     value_name="Number_Of_Creditcards"
     ).assign(
     Date=lambda x:x["Date"].astype(int).astype(str),
-    Number_Of_Creditcards=lambda x:x["Number_Of_Creditcards"].astype("Int64")
+    Number_Of_Creditcards=lambda x: conversion_segura(x["Number_Of_Creditcards"])
 
     )
     df=crear_columna_year_month(df,collumnafechaexiste=1).fillna(0)
@@ -266,36 +275,64 @@ nombreIntervalo:str,
 #-------------------------------------------------------------------------------------------------------------------------------------->
 
 #Limpiar datos carpeta 3  040_12e_R10_Distribucion_de_tarjetas_por_probabilidad_de_incumplimiento_201106.xlsx
-#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[2][0],"B:AO","Credit_Limit_Range_KMXN",Credit_Limit_Range_KMXN="category")
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[2][0],"B:AO","Credit_Limit_Range_KMXN",Credit_Limit_Range_KMXN="category")
 #Limpiar Datos carpeta 2 040_12d_R2_Saldo_de_tarjetas_de_credito_por_institucion_201106.xlsx
-#x=limpiar_datos_de_carpeta_040_12d_R2(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[1][0],"Credit_Card_Balance","B:C",Credit_Card_Balance="float64")
+#x=limpiar_datos_largos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[1][0],"Credit_Card_Balance","B:C",Credit_Card_Balance="float64")
 #Limpiar datos carpeta 1 040_12d_R1_Numero_de_tarjetas_de_credito_por_institucion_201106.xlsx
-#x=limpiar_datos_de_carpeta_040_12d_R2(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[0][0],"Number_Of_Creditcards","B:C",Number_Of_Creditcards="int")
+#x=limpiar_datos_largos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[0][0],"Number_Of_Creditcards","B:C",Number_Of_Creditcards="int")
 #Limpiar datos carpeta 4 040_12e_R11_Distribucion_de_tarjetas_por_impagos_consecutivos_201106.xlsx
-#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[3][0],"B:AO","Consecutive_Delinquency_Bucket",Consecutive_Delinquency_Bucket="category")
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[3][0],"B:AO","Consecutive_Delinquency_Bucket",Consecutive_Delinquency_Bucket="category")
 #Limpiar datos carpeta 5 040_12e_R1_Distribucion_de_tarjetas_por_limite_de_credito_201106.xlsx Credit_Limit_Range_KMXN
-#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[4][0],"B:AO","Credit_Limit_Range_KMXN",Credit_Limit_Range_KMXN="category")
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[4][0],"B:AO","Credit_Limit_Range_KMXN",Credit_Limit_Range_KMXN="category")
 #Limpiar datos carpeta 6 040_12e_R2_Distribucion_de_tarjetas_por_porcentaje_de_uso_de_linea_201106.xlsx Credit_Line_Utilization_Range_Pct
-#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[5][0],"B:AO","Credit_Line_Utilization_Range_Pct",Credit_Line_Utilization_Range_Pct="category")
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[5][0],"B:AO","Credit_Line_Utilization_Range_Pct",Credit_Line_Utilization_Range_Pct="category")
 #Limpiar datos carpeta 7 040_12e_R3_Porcentaje_de_pago_minimo_exigido_con_respecto_al_saldo_a_pagar_201106.xlsx
-#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[6][0],"B:AO","Minimum_Payment_Percentage",Minimum_Payment_Percentage="category")
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[6][0],"B:AO","Minimum_Payment_Percentage",Minimum_Payment_Percentage="category")
 #Limpiar datos carpeta 8 040_12e_R4_Porcentaje_de_pago_realizado_con_respecto_al_saldo_a_pagar_201106.xlsx
-#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[7][0],"B:AO","Actual_Payment_Percentage",Actual_Payment_Percentage="category")
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[7][0],"B:AO","Actual_Payment_Percentage",Actual_Payment_Percentage="category")
 #x.head()
 #Limpiar datos carpeta 9 040_12e_R50_Distribucion_de_tarjetas_por_porcentaje_de_pago_minimo_respecto_a_la_linea_de_credito_201106.xlsx
-#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[8][0],"B:AO","Minimum_Payment_Percentage_Range",Minimum_Payment_Percentage_Range="category")
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[8][0],"B:AO","Minimum_Payment_Percentage_Range",Minimum_Payment_Percentage_Range="category")
 #Limpiar datos carpeta 10 040_12e_R5_Porcentaje_de_pago_realizado_vs_pago_minimo_exigido_201106.xlsx
-#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[9][0],"B:AO","Actual_vs_Minimum_Payment_Percentage",Actual_vs_Minimum_Payment_Percentage="category")
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[9][0],"B:AO","Actual_vs_Minimum_Payment_Percentage",Actual_vs_Minimum_Payment_Percentage="category")
 #Limpiar datos carpeta 11 040_12e_R6_ConsumoRevolvente_TarjetasPagoSinIntereses_201106.xlsx
-#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[10][0],"B:AO","Minimum_Payment_Ratio_Interval",Minimum_Payment_Ratio_Interval="category")
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[10][0],"B:AO","Minimum_Payment_Ratio_Interval",Minimum_Payment_Ratio_Interval="category")
 #Limpiar datos carpeta 12 040_12e_R7_Consumo_Revolvente_Porcentaje_pago_realizado_vs_PPNGI_201106.xlsx
-#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[11][0],"B:AO","Payment_Balance_Ratio_Interval",Payment_Balance_Ratio_Interval="category")
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[11][0],"B:AO","Payment_Balance_Ratio_Interval",Payment_Balance_Ratio_Interval="category")
 #Limpiar datos carpeta 13 040_12e_R8_Consumo_Revolvente_desde_la_apertura_de_la_cuenta_201106.xlsx
-#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[12][0],"B:AO","Months_Since_Opening",Months_Since_Opening="category")
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[12][0],"B:AO","Months_Since_Opening",Months_Since_Opening="category")
 #Limpiar datos carpeta 14 040_12e_R9_Consumo_Revolvente_Distribucion_de_tarjetas_por_perdida_esperada_201106.xlsx
-#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[13][0],"B:AO","Expected_Loss_Range",Expected_Loss_Range="category")
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[13][0],"B:AO","Expected_Loss_Range",Expected_Loss_Range="category")
+#Limpiar datos carpeta 15 040_12e_R9_Consumo_Revolvente_Distribucion_de_tarjetas_por_perdida_esperada_201106.xlsx #aqui se hizo un renombre de la columna Number_Of_Creditcards a Interest_Rate
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[14][0],"B:AO","Expected_Loss_Probability",Expected_Loss_Probability="category").rename(columns={"Number_Of_Creditcards":"Interest_Rate"})
+#Limpiar datos carpeta 16 040_12h_R2_Porcentaje_de_uso_de_linea_por_perdida_esperada_201106.xlsx aqui se hizo un renombre de la columna Number_Of_Creditcards a credit_line_utilization_rate
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[15][0],"B:AO","Expected_Loss_Probability",Expected_Loss_Probability="category").rename(columns={"Number_Of_Creditcards":"credit_line_utilization_rate"})
+#Limpiar datos carpeta 17 040_12h_R3_Porcentaje_de_pago_minimo_entre_saldo_a_pagar_por_perdida_esperada_201106.xlsx aqui se hizo un renombre de la columna Number_Of_Creditcards a Min_Payment_To_Balance_Ratio
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[16][0],"B:AO","Expected_Loss_Probability",Expected_Loss_Probability="category").rename(columns={"Number_Of_Creditcards":"Min_Payment_To_Balance_Ratio"})
+#Limpiar datos carpeta 18 040_12h_R5_Porcentaje_de_pago_realizado_entre_pago_minimo_por_perdida_esperada_201106.xlsx aqui se hizo un renombre de la columna Number_Of_Creditcards a Min_Payment_Coverage_Percentage
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[17][0],"B:AO","Expected_Loss_Probability",Expected_Loss_Probability="category").rename(columns={"Number_Of_Creditcards":"Min_Payment_Coverage_Percentage"})
+#Limpiar datos carpeta 19 040_12h_R8_Impagos_consecutivos_por_perdida_esperada_201106.xlsx 
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[18][0],"B:AO","Expected_Loss_Probability",Expected_Loss_Probability="category").rename(columns={"Number_Of_Creditcards":"Months_In_Default"})
+#Limpiar datos carpeta 20 040_12h_R9_Meses_transcurridos_desde_la_apertura_por_perdida_esperada_201106.xlsx en esta se renombro la columna Number_Of_Creditcards a portfolio_maturity_months
+#x=limpiar_datos_anchos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[19][0],"B:AO","Expected_Loss_Probability",Expected_Loss_Probability="category").rename(columns={"Number_Of_Creditcards":"portfolio_maturity_months"})
 #-------------->ok
-#Limpiar datos carpeta 15 040_12h_R1_Tasas_de_interes_por_perdida_esperada_201106.xlsx
-#x=limpiardatsetslargos(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[14][0],"B:AO","Expected_Loss_Range",Expected_Loss_Range="category")
-print(gv.ARCHIVOS_DENTRO_CARPETAS_OUTPUT[14][0].name)
-#x.head()
+class DataFrameLeo:
+            # Tipo: Recibe (DataFrame ) -> Devuelve (DataFrame)
+# Callable: Significa "algo que se puede llamar" (una función o método).
+
+# Primeros corchetes [...]: Es una lista de los tipos de datos que la función espera recibir. Si recibiera dos cosas, sería [[pd.DataFrame, int], ...].
+
+# La coma final ,: Separa los datos de entrada del dato de salida.
+
+# Último elemento: Es el tipo de dato que obtendrás cuando ejecutes la función
+
+    def __init__(self, ruta:str ,usecols:str,ESTRATEGIA:Callable[[dtf],dtf],dtf)->None:
+        self.ruta:str=ruta
+        self.usecols:str=usecols
+
+
+        self.df:dtf=self._leer_excel()
+        
+    def _leer_excel(self)->dtf:
+        return pd.read_excel(self.ruta,usecols=self.usecols)
+

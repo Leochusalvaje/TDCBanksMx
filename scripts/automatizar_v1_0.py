@@ -7,6 +7,24 @@ import pyautogui
 import time
 import win32gui, win32con
 import routes as gv
+import pywintypes
+import re
+
+def busqueda_patron(exp:str):
+        # Explicación del patrón:
+    # ^[^_]+  -> Salta el primer bloque (040)
+    # _[^_]+  -> Salta el segundo bloque (12e)
+    # _([^_]+) -> Captura lo que hay en el tercer bloque hasta el siguiente guion bajo
+    patron = r"^[^_]+_[^_]+_([^_]+)"
+
+    resultado = re.search(patron, exp)
+
+    if resultado:
+        serie_nombre = resultado.group()
+        print(f"Serie extraída: {serie_nombre}") # Imprimirá: R10
+    return serie_nombre
+
+
 # -------------------------------
 # CONFIGURACIÓN
 # -------------------------------
@@ -38,23 +56,49 @@ def activar_ventana_al_frente(hwnd, timeout=5):
         time.sleep(0.2)
     else:
         print(f"No se pudo activar/maximizar la ventana con hwnd {hwnd}")
-def abrir_excel(ruta):
-    excel = win32.gencache.EnsureDispatch("Excel.Application")
-    wb = excel.Workbooks.Open(ruta)
-    excel.Visible = True 
 
-    # 🌟 PASO CRUCIAL 1: Dale un momento a Windows para que dibuje la ventana.
-    time.sleep(0.1) 
+
+
+
+def abrir_excel(ruta, reintentos=3) -> tuple:
+    # Usar EnsureDispatch es genial porque asegura que las constantes de Excel se carguen
+    excel = win32.gencache.EnsureDispatch("Excel.Application")
     
-    # 🌟 PASO CRUCIAL 2: Obtener el Handle (hwnd) del objeto Excel.Application
-    # La propiedad Hwnd está disponible en el objeto Application.
-    hwnd_excel = excel.Hwnd
-    
-    # 🌟 PASO CRUCIAL 3: Llamar a la función con el Handle, no con el nombre.
-    activar_ventana_al_frente(hwnd_excel)
-    
-    wb.Sheets(1).Activate()
-    return excel, wb
+    try:
+        wb = excel.Workbooks.Open(ruta)
+        excel.Visible = True 
+        
+        # 🌟 PASO CRUCIAL 1: Dale un momento a Windows para que "pinte" el proceso
+        time.sleep(0.5) # Subí un poco a 0.5 porque a veces 0.1 es muy rápido para el Render
+        
+        hwnd_excel = excel.Hwnd
+        
+        for i in range(reintentos):
+            try:
+                # Intentamos activar la ventana físicamente
+                activar_ventana_al_frente(hwnd_excel)
+                # Intentamos activar la hoja lógicamente
+                wb.Sheets(1).Activate()
+                
+                print(f"Excel listo y al frente al intento {i+1}")
+                return excel, wb
+                
+            except (pywintypes.error, Exception) as e:
+                print(f"Intento {i+1} fallido: {e}")
+                if i < reintentos - 1:
+                    time.sleep(1)
+                else:
+                    print("Se agotaron los reintentos.")
+                    # Si falla, cerramos para no dejar procesos "zombie" en el Administrador de Tareas
+                    wb.Close(False)
+                    excel.Quit()
+                    raise Exception("No se pudo poner Excel en primer plano.")
+                    
+    except Exception as e:
+        print(f"Error crítico al abrir el archivo: {e}")
+        excel.Quit()
+        return None, None
+
 def keepClick(t):
     pyautogui.mouseDown()
     time.sleep(t)
@@ -71,8 +115,12 @@ def marcarSiguienteFecha(n):
     moveToClickAndWait(coord_fecha[0],coord_fecha[1],0,0)
     moveToClickAndWait(coord_obtener[0],coord_obtener[1],0,0)
 
+def revisar_y_crear_ruta_destino():
+    pass
+
 
 def limpieza_datos_por_archivo(rutaArchivoParaLimpiar,NumerodeBimestresEnArchivo):
+
     excel, wb_cnbv = abrir_excel(rutaArchivoParaLimpiar)
     ws_cnbv = wb_cnbv.Sheets(1)
 
@@ -84,13 +132,25 @@ def limpieza_datos_por_archivo(rutaArchivoParaLimpiar,NumerodeBimestresEnArchivo
         df = pd.DataFrame(data[1:], columns=data[0])
         #La siguiente linea seleciona el origen que va a tomar el nombre de los archivos aqui debes selecioanr una celda en la que siempre haya la fecha de la consulta
         #para los arhcivos de uan tablas es C9 y los demas es c10
-        nombre_extra = str(int(origen.Range("C10").Value))
+        valor_c9 = origen.Range("C9").Value
+        valor_c10 = origen.Range("C10").Value
+
+        if valor_c9 is int:
+
+            buscar_fecha = valor_c9
+        else:
+            buscar_fecha=valor_c10
+        try:
+            nombre_extra=str(buscar_fecha)
+        except (ValueError, TypeError):
+            print("Error: No se encontró una fecha válida en C9 ni en C10")
+            nombre_extra = "FECHA_DESCONOCIDA"
+        archivo_origen=busqueda_patron(rutaArchivoParaLimpiar)
         # Crear el nombre del archivo
-        preparar_nombre=gv.limpiar_texto(str(rutaArchivoParaLimpiar.stem))
-        nueva_carpeta=gv.RUTA_OUTPUT / preparar_nombre
+        nueva_carpeta=gv.RUTA_OUTPUT / archivo_origen
         #crea la carpeta destino
         nueva_carpeta.mkdir(parents=True, exist_ok=True)
-        nombre_archivo=f"{preparar_nombre}_{nombre_extra}.xlsx"
+        nombre_archivo=f"{archivo_origen}_{nombre_extra}.xlsx"
         ruta_final=nueva_carpeta/nombre_archivo
         # -------------------------------
         # GUARDAR EN LIBRO MAESTRO
@@ -162,9 +222,9 @@ def limpieza_datos_por_archivo(rutaArchivoParaLimpiar,NumerodeBimestresEnArchivo
     
     wb_cnbv.Close(SaveChanges=False)        
     excel.Quit()
-x=gv.ARCHIVOS_DATOSTARJETASCREDITO
+x=gv.ARCHIVOS_DATA_RAW[0]["ruta"]
 
 #sigue el 17
-#print(x[10])
+print(x)
 #print(len(x))
-limpieza_datos_por_archivo(x[10],85)
+#limpieza_datos_por_archivo(x[10],85)
