@@ -1,5 +1,3 @@
-import pyautogui
-import time
 import pandas as pd
 import openpyxl
 import win32com.client as win32
@@ -7,10 +5,11 @@ import pyautogui
 import time
 import win32gui, win32con
 import routes as gv
+from pathlib import Path
 import pywintypes
 import re
 
-def busqueda_patron(exp:str):
+def busqueda_patron_para_nombrar_carpetas(exp:str)-> str:
         # Explicación del patrón:
     # ^[^_]+  -> Salta el primer bloque (040)
     # _[^_]+  -> Salta el segundo bloque (12e)
@@ -21,7 +20,7 @@ def busqueda_patron(exp:str):
 
     if resultado:
         serie_nombre = resultado.group()
-        print(f"Serie extraída: {serie_nombre}") # Imprimirá: R10
+        print(f"Serie extraída: {serie_nombre}") 
     return serie_nombre
 
 
@@ -41,7 +40,7 @@ coord_ultima=(155,385)
 coord_penultima=(156,404)
 
 #Funciones auxialiares
-def activar_ventana_al_frente(hwnd, timeout=5):
+def activar_ventana_al_frente(hwnd, timeout=5)-> None:
     start = time.time()
     while time.time() - start < timeout:
         if hwnd:
@@ -56,10 +55,6 @@ def activar_ventana_al_frente(hwnd, timeout=5):
         time.sleep(0.2)
     else:
         print(f"No se pudo activar/maximizar la ventana con hwnd {hwnd}")
-
-
-
-
 def abrir_excel(ruta, reintentos=3) -> tuple:
     # Usar EnsureDispatch es genial porque asegura que las constantes de Excel se carguen
     excel = win32.gencache.EnsureDispatch("Excel.Application")
@@ -97,17 +92,17 @@ def abrir_excel(ruta, reintentos=3) -> tuple:
     except Exception as e:
         print(f"Error crítico al abrir el archivo: {e}")
         excel.Quit()
-        return None, None
+        return excel, wb
 
-def keepClick(t):
+def keepClick(t)-> None:
     pyautogui.mouseDown()
     time.sleep(t)
     pyautogui.mouseUp()
-def moveToClickAndWait(x,y,t,tc):
+def moveToClickAndWait(x:int,y:int,t:float,tc:float)-> None:
     pyautogui.moveTo(x, y, t)
     keepClick(tc)
     time.sleep(t) 
-def marcarSiguienteFecha(n):
+def marcarSiguienteFecha(n: int)-> None:
     for i in range(n):
         moveToClickAndWait(coord_abajo[0],coord_abajo[1],0,0)
     moveToClickAndWait(coord_fecha[0],coord_fecha[1],0,0)
@@ -115,11 +110,11 @@ def marcarSiguienteFecha(n):
     moveToClickAndWait(coord_fecha[0],coord_fecha[1],0,0)
     moveToClickAndWait(coord_obtener[0],coord_obtener[1],0,0)
 
-def revisar_y_crear_ruta_destino():
+def revisar_y_crear_ruta_destino() -> None:
     pass
 
 
-def limpieza_datos_por_archivo(rutaArchivoParaLimpiar,NumerodeBimestresEnArchivo):
+def limpieza_datos_por_archivo(rutaArchivoParaLimpiar,NumerodeBimestresEnArchivo)-> None:
 
     excel, wb_cnbv = abrir_excel(rutaArchivoParaLimpiar)
     ws_cnbv = wb_cnbv.Sheets(1)
@@ -145,7 +140,7 @@ def limpieza_datos_por_archivo(rutaArchivoParaLimpiar,NumerodeBimestresEnArchivo
         except (ValueError, TypeError):
             print("Error: No se encontró una fecha válida en C9 ni en C10")
             nombre_extra = "FECHA_DESCONOCIDA"
-        archivo_origen=busqueda_patron(rutaArchivoParaLimpiar)
+        archivo_origen=busqueda_patron_para_nombrar_carpetas(rutaArchivoParaLimpiar)
         # Crear el nombre del archivo
         nueva_carpeta=gv.RUTA_OUTPUT / archivo_origen
         #crea la carpeta destino
@@ -225,6 +220,31 @@ def limpieza_datos_por_archivo(rutaArchivoParaLimpiar,NumerodeBimestresEnArchivo
 x=gv.ARCHIVOS_DATA_RAW[0]["ruta"]
 
 #sigue el 17
-print(x)
+#help(win32gui)
 #print(len(x))
 #limpieza_datos_por_archivo(x[10],85)
+def abrir_excel_por_ruta(rutaexcel)->None:
+    ventanaex = win32.Dispatch("Excel.Application")
+    hdwnd_excel = ventanaex.Hwnd
+    ventanaex.Visible=True
+
+
+    try:
+        libro=ventanaex.Workbooks.Open(rutaexcel)
+        win32gui.ShowWindow(hdwnd_excel, win32con.SW_MAXIMIZE)
+        win32gui.SetForegroundWindow(hdwnd_excel)
+    except FileNotFoundError:
+        print("El archivo no existe en esa ruta")
+    except Exception as e:
+        print(f"Ocurrió un error inesperado con la libreria win32 {type(e).__name__}: {e}")
+    print("Excel abierto y traido al frente")
+    return libro
+    #libro.Close(False)
+    #ventanaex.Quit()
+
+def revisar_carpeta_output_y_crear_carpeta(archivoecxel: str)-> Path.Path:
+    gv.RUTA_OUTPUT.mkdir(parents=True, exist_ok=True)
+    rutanueva=gv.RUTA_OUTPUT / busqueda_patron_para_nombrar_carpetas(archivoecxel)
+    rutanueva.mkdir(parents=True, exist_ok=True)
+    return rutanueva
+    #abrir_excel_por_ruta(x)
