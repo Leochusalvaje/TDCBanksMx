@@ -8,13 +8,19 @@ import routes as gv
 from pathlib import Path
 import pywintypes
 import re
+from typing import Any
+import config as con
+
+pyautogui.FAILSAFE = True
+
+
 
 def busqueda_patron_para_nombrar_carpetas(exp:str)-> str:
         # Explicación del patrón:
     # ^[^_]+  -> Salta el primer bloque (040)
     # _[^_]+  -> Salta el segundo bloque (12e)
     # _([^_]+) -> Captura lo que hay en el tercer bloque hasta el siguiente guion bajo
-    patron = r"^[^_]+_[^_]+_([^_]+)"
+    patron = con.regexp_patrones.ARCHIVOSCNBV
 
     resultado = re.search(patron, exp)
 
@@ -110,8 +116,7 @@ def marcarSiguienteFecha(n: int)-> None:
     moveToClickAndWait(coord_fecha[0],coord_fecha[1],0,0)
     moveToClickAndWait(coord_obtener[0],coord_obtener[1],0,0)
 
-def revisar_y_crear_ruta_destino() -> None:
-    pass
+
 
 
 def limpieza_datos_por_archivo(rutaArchivoParaLimpiar,NumerodeBimestresEnArchivo)-> None:
@@ -217,34 +222,237 @@ def limpieza_datos_por_archivo(rutaArchivoParaLimpiar,NumerodeBimestresEnArchivo
     
     wb_cnbv.Close(SaveChanges=False)        
     excel.Quit()
-x=gv.ARCHIVOS_DATA_RAW[0]["ruta"]
+x=gv.ARCHIVOS_DATA_RAW[3]["ruta"]
 
-#sigue el 17
-#help(win32gui)
-#print(len(x))
-#limpieza_datos_por_archivo(x[10],85)
-def abrir_excel_por_ruta(rutaexcel)->None:
+
+def validar_ruta(ruta:Path)->Path:
+    if not ruta.exists() or not ruta.is_file():
+        raise FileNotFoundError(
+                    f"No se encontró el archivo: {ruta.name}\n"
+                    f"Se buscó en la ruta: {ruta.parent}\n"
+                    f"Por favor, verifica la carpeta \"Data\""
+                )
+    return ruta
+
+def extraer_datos(celda:Any,rutadestino:Path,ventanaexcel)->None:
+    rango=celda.CurrentRegion()
+    rutadellibrocontrol=validar_ruta(gv.Paths.output/"LibroControl.xlsx")
+    nombreventana=rutadellibrocontrol.stem
+    try:
+        libroabierto=ventanaexcel.Workbooks(nombreventana)
+        libroabierto.Close(SaveChanges=False)
+        print("Se cierra la ventana previa del LibroControl si es que esta abierto para evitar inyectar informacion erronea")
+    except:
+        pass
+
+
+    librocontrol=ventanaexcel.Workbooks.Open(str(rutadellibrocontrol))
+    librocontrol.Activate()
+
+    filas=len(rango)
+    columnas=len(rango[0])
+    hoja=librocontrol.Sheets(1)
+
+    print(type(rango))
+    celdas_destino=hoja.Range(hoja.Cells(1, 1),hoja.Cells(filas, columnas))
+    celdas_destino.Value=rango
+    try:
+        ventanaexcel.DisplayAlerts = False
+        librocontrol.SaveAs(str(rutadestino))
+        librocontrol.Close(SaveChanges=False)
+    except Exception as e:
+        print(f"Error en el metodo SaveAs , no se pudo guardar {type(e).__name__}: {e}\n")
+    finally:
+            if librocontrol is not None:
+                try:
+                    ventanaexcel.DisplayAlerts = False 
+                    librocontrol.Close(SaveChanges=False)
+                except:
+                    ventanaexcel.DisplayAlerts = True
+                    pass     
+    return None
+
+def string_eureka_fechas(libro:Any)->tuple:
+    primerhoja=libro.Sheets(1)
+    primerhoja.Activate()
+    # buscar_celda=primerhoja.Cells.Find(What="Banco")
+    # if buscar_celda:
+    #     print(f"Encontrado en: {buscar_celda.Address}")
+    # print(buscar_celda)
+    buscar_1=primerhoja.Range("B1").End(-4121).End(-4121)
+
+    if not primerhoja.Range("B1").End(-4121).Value=="Notas":
+        raise Exception("\nCambio el formato de la CNBV actualizar saltos de linea y espaciados de nuevo para encontrar la tabla, se debe modificar los pasos de la libreria win32com.client.")
+
+    a=buscar_1.CurrentRegion
+    a.Activate()
+    tupla_datos=a.Value
+
+    if not len(tupla_datos[0])>=2:
+        raise Exception("\nEs muy probable que cambio la formato de la CNBV pues no se esta alcanzando la tabla de datos para su extraccion.")
+    try:
+    #celda=primerhoja.Cell
+        str_fecha=str(int(tupla_datos[0][2]))
+
+        print("eureka")        
+        print("Formato estandar detectado no se necesito aplicar logica adicional")
+    except Exception:
+        str_fecha=str(int(tupla_datos[1][2]))
+        print(str_fecha)
+
+    if not re.match(con.patrones["fecha"],str_fecha):
+        raise Exception("\nEl valor para buscar la fecha y nombrar las carpetas no se cumple. Validar la celda de donde se esta extrayendo la fecha.")
+        
+    str_fecha=f"{str_fecha}.xlsx"
+    print(str_fecha)
+    celda_fecha=buscar_1
+    return str_fecha,celda_fecha  
+
+def abrir_excel_por_ruta(rutaexcel:Path)->tuple:
+    #Validamos que la ruta exista
+    ruta=validar_ruta(rutaexcel)
+
     ventanaex = win32.Dispatch("Excel.Application")
     hdwnd_excel = ventanaex.Hwnd
     ventanaex.Visible=True
 
 
+
     try:
-        libro=ventanaex.Workbooks.Open(rutaexcel)
+        libro=ventanaex.Workbooks.Open(ruta)
         win32gui.ShowWindow(hdwnd_excel, win32con.SW_MAXIMIZE)
         win32gui.SetForegroundWindow(hdwnd_excel)
+
+    #tener cuidado de no abrir un libro antes por que si no falla traer al frente el archivo de consultas
+
     except FileNotFoundError:
         print("El archivo no existe en esa ruta")
     except Exception as e:
-        print(f"Ocurrió un error inesperado con la libreria win32 {type(e).__name__}: {e}")
+        print(f"Ocurrió un error inesperado con la libreria win32com.client {type(e).__name__}: {e}\n")
     print("Excel abierto y traido al frente")
-    return libro
     #libro.Close(False)
     #ventanaex.Quit()
+    return libro,ventanaex
 
-def revisar_carpeta_output_y_crear_carpeta(archivoecxel: str)-> Path.Path:
+def revisar_carpeta_output_y_crear_carpeta(archivoecxel: Path)-> Path:
+    ruta=validar_ruta(archivoecxel)
     gv.RUTA_OUTPUT.mkdir(parents=True, exist_ok=True)
-    rutanueva=gv.RUTA_OUTPUT / busqueda_patron_para_nombrar_carpetas(archivoecxel)
-    rutanueva.mkdir(parents=True, exist_ok=True)
-    return rutanueva
-    #abrir_excel_por_ruta(x)
+    rutaNueva=gv.RUTA_OUTPUT / busqueda_patron_para_nombrar_carpetas(ruta.name)
+    rutaNueva.mkdir(parents=True, exist_ok=True)
+    return rutaNueva
+
+def one_click(numerodeclicks,coordenada)->None:
+    c=0
+    while (numerodeclicks)>=c:
+        pyautogui.click(coordenada)
+        c+=1
+    return None
+
+def final_bimestres_y_seleccionar_todos_los_bancos(numerodeclicks)->None:
+    one_click(numerodeclicks-3,coord_abajo)
+    one_click(2,coord_banco)
+    #bloquepara obtener informacion aqui es un punto critico de fallos
+    one_click(1,coord_obtener)
+#Revisa el archivo para saber cuantos bimestres contiene, y genera un lista de los bimestres contenidos
+def lista_verdad(fecha:str)->tuple:
+    
+    con.patron.revisar_patron(con.patron.FECHAS,fecha)
+    yearbase=2011
+    try:
+        añosultimobimestre=int(fecha[:4])
+        añostranscurridos=añosultimobimestre-yearbase
+        bimestreactual=int(fecha[-2:])
+    except ValueError as e:
+        print(f"Formato del string fecha incorrecto {e}")
+    bimestresdel2011=4
+    bimestresenarchivo=6*(añostranscurridos-1)+(bimestresdel2011+int(bimestreactual/2))
+    print(f"bimestres en el archivo:{bimestresenarchivo}")
+    #para resolver el seguimeitno de fechas se solcuiona con una tarnsformacion lineal que planteo su servidor y tener una lista de todos los bimestres 
+    #que estan contenidos en el archivo excel al momento de abrirlo
+    y=[]
+    yearconstante=201100
+    for k in range(1,añostranscurridos+2):
+
+        for i in range(2,13,2):
+            
+            if k==(añostranscurridos+1) and bimestreactual==i:
+                r=yearconstante+100*(k-1)+i
+                y.append(r)    
+                return y,bimestresenarchivo
+
+            if (bimestresdel2011-1)*2>i:
+                continue
+            r=yearconstante+100*(k-1)+i
+            y.append(r)    
+
+
+
+    return y,bimestresenarchivo
+
+def orquesta(ruta:Path)->None:
+    
+    libro,excel=abrir_excel_por_ruta(ruta)
+    nombrearchivo=ruta.stem
+    nombrecarpeta=busqueda_patron_para_nombrar_carpetas(nombrearchivo)
+
+    #aseguramos que se cree la carpeta donde vamos a vaciar la informacion
+    carpetadestino=gv.OutputManager_instancia.get_excel(nombrecarpeta)
+    strfecha,rangoenobjeto=string_eureka_fechas(libro)
+    bimestresarchivo=lista_verdad(strfecha)
+    #revisamos la fecha actual para saber cuantos bimestres vienen en el archivo de la CNBV sabemos que la informacion viene desde 201106
+
+    #function para bajar al final de los bimestres seleccionar todos los bancos y obtener la informacion 
+    final_bimestres_y_seleccionar_todos_los_bancos(bimestresarchivo)
+    #se ponen () al rangoobjeto para que se convierta en tupla    
+    rutadestino=carpetadestino/(nombrecarpeta+"_"+strfecha)
+    extraer_datos(rangoenobjeto,rutadestino,excel)
+    listabimestres,numerobimestres=lista_verdad(strfecha)
+
+
+#orquesta(x)
+
+def buscar_fechas_en_el_Activex_y_extraer(listadefechas:list,bimestresdentrodelexcel:int)->None:
+    print(listadefechas[-1])
+    
+    #
+    
+    return None
+
+
+
+x,y=lista_verdad("202506")
+
+
+buscar_fechas_en_el_Activex_y_extraer(x,y)
+
+
+class excelOpenManager:
+
+    def __init__(self,ruta):
+        self.ventana=win32.Dispatch("Excel.Application")
+        self.hdwn=self.ventana.Hwnd
+        self.libro
+        pass
+
+
+
+
+#print(type(gv.ARCHIVOS_DATA_RAW[0]["ruta"]))
+#print(type(Path().mkdir))
+# 1. Definimos la ruta usando Pathlib (como lo hablamos hoy)
+# ventanaex = win32.Dispatch("Excel.Application")
+# libro=ventanaex.Workbooks.Open(x).Worksheets(1).Cells
+# ruta_txt = Path("metodos_excel_hoja.txt")
+
+# 2. Obtenemos la lista de atributos y la limpiamos
+# Filtramos los que empiezan con "_" porque suelen ser internos de Python
+# atributos = [attr for attr in dir(libro) if not attr.startswith("_")]
+
+# 3. Guardamos en el archivo
+# with ruta_txt.open("w", encoding="utf-8") as f:
+#     f.write(f"MÉTODOS Y PROPIEDADES DISPONIBLES PARA: {type(libro)}\n")
+#     f.write("="*50 + "\n")
+#     for attr in atributos:
+#         f.write(f"{attr}\n")
+
+# print(f"✅ ¡Listo! Se han guardado {len(atributos)} métodos en {ruta_txt.absolute()}")

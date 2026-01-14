@@ -1,5 +1,6 @@
 import pytest
-import automatizar_v1_0 as aut 
+import automatizar_v1_0 as aut
+import pathlib as path
 
 def test_obtener_serie():
     nombre="040_12e_R10_Distribución de tarjetas por probabilidad de incumplimiento"
@@ -17,3 +18,5 @@ def test_obtener_serie_2():
     assert isinstance(resultado,str)
     assert resultado=="040_12e_R50"
     assert len(resultado)>0
+def test_revisar_que_se_cree_carpeta(tmp_path):
+    ruta_base=tmp_path/"Output"

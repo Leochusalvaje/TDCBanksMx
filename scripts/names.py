@@ -47,12 +47,12 @@ def renombrar_y_limpiar_archivos(ruta_carpeta: Path) -> List[Tuple[Path, Path]]:
 # --- Ejemplo de Uso ---
 
 # NOTA: Asegúrate de que esta ruta apunte a la carpeta que contiene los archivos
-RUTA_A_PROCESAR = gv.RUTAS_OUTPUT_CONSULTAS[12]
-print(RUTA_A_PROCESAR)
-resultados = renombrar_y_limpiar_archivos(RUTA_A_PROCESAR)
+# RUTA_A_PROCESAR = gv.RUTAS_OUTPUT_CONSULTAS[12]
+# print(RUTA_A_PROCESAR)
+# resultados = renombrar_y_limpiar_archivos(RUTA_A_PROCESAR)
 
-print(f"Archivos renombrados: {len(resultados)}")
-if resultados:
-    print("\nPrimeros 3 cambios:")
-    for original, nuevo in resultados[:3]:
-        print(f"  De: {original.name}\n  A:  {nuevo.name}")
+# print(f"Archivos renombrados: {len(resultados)}")
+# if resultados:
+#     print("\nPrimeros 3 cambios:")
+#     for original, nuevo in resultados[:3]:
+#         print(f"  De: {original.name}\n  A:  {nuevo.name}")

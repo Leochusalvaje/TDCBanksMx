@@ -1,13 +1,24 @@
 
 from pathlib import Path
+from config import Paths
 import os
-from datetime import datetime
-# ruta.is_file() comprueba que sea un archivo (no carpeta).
-# ruta.suffix devuelve la extensión, que comparamos con ['.xlsx', '.xls'].
-# iterdir() recorre todos los elementos dentro de la carpeta.
-# 1. Crear el directorio de forma segura
-#ruta_carpeta.mkdir(parents=True, exist_ok=True)
 
+class ProjectLayout:
+    def __init__(self):
+        self.paths=Paths
+    def create(self):
+        for path in self.paths.ALL:
+            path.mkdir(parents=True, exist_ok=True)
+
+class OutputManager:
+    def __init__(self):
+        self.base = Paths.output
+
+    def get_excel(self, ruta: str):
+        path = self.base / ruta
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return path
+OutputManager_instancia=OutputManager()
 
 RUTA_BASE = Path(__file__).parent.parent
 RUTA_PRIME=RUTA_BASE/"Routes"
@@ -15,6 +26,11 @@ RUTA_DATA = RUTA_BASE  / "Data"
 RUTAS_DATA_TDC=RUTA_DATA/"datosTarjetasCredito"
 RUTA_OUTPUT = RUTA_BASE / "Output"
 RUTA_DATASET=RUTA_BASE/"Datasets"
+# ruta.is_file() comprueba que sea un archivo (no carpeta).
+# ruta.suffix devuelve la extensión, que comparamos con ['.xlsx', '.xls'].
+# iterdir() recorre todos los elementos dentro de la carpeta.
+# 1. Crear el directorio de forma segura
+#ruta_carpeta.mkdir(parents=True, exist_ok=True)
 #.iterdir() lista todo lo que está dentro de la carpeta (archivos y subcarpetas).
 #.is_dir() filtra solo las carpetas.
 
