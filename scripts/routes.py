@@ -56,6 +56,7 @@ RUTAS_Y_ARCHIVOS_OUTPUT_BRONZE=[
 #ARCHIVOS_DATA_RAW={str(RUTAS_DATA_TDC):[file for file in RUTAS_DATA_TDC.rglob("*.xls")]}
 
 ARCHIVOS_DATA_RAW=[
+    #Archivos es un objeto Path
     {"origen":archivos.name,"ruta":archivos}
     for archivos in RUTAS_DATA_TDC.iterdir()
 
