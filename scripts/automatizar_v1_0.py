@@ -27,7 +27,6 @@ CONFIG_COORDS = {
     "obtener": (76, 409),
     "fecha_top": (155, 387),
     "fecha_bottom": (155, 423),
-    "ultima": (155, 385),
     "penultima": (156, 404),
     "tiempo_espera_consulta": 1,
     "tiempo_espera_entre_clicks":0.5
@@ -316,6 +315,7 @@ def string_eureka_fechas(libro:Any)->tuple:
         
     str_fecha=str_fecha
     celda_tabla=buscar_1
+
     return str_fecha,celda_tabla  
 
 
@@ -367,7 +367,9 @@ def final_bimestres_y_seleccionar_todos_los_bancos(numerodeclicks)->None:
     #bloquepara obtener informacion aqui es un punto critico de fallos
     one_click(1,coord_obtener)
 #Revisa el archivo para saber cuantos bimestres contiene, y genera un lista de los bimestres contenidos
-def lista_verdad(fecha:str)->tuple:
+
+
+def lista_verdad(fecha:str)->list:
     
     con.patron.revisar_patron(con.patron.FECHAS,fecha)
     yearbase=2011
@@ -380,48 +382,29 @@ def lista_verdad(fecha:str)->tuple:
     bimestresdel2011=4
     bimestresenarchivo=6*(añostranscurridos-1)+(bimestresdel2011+int(bimestreactual/2))
     print(f"bimestres en el archivo:{bimestresenarchivo}")
-    #para resolver el seguimeitno de fechas se solcuiona con una tarnsformacion lineal que planteo su servidor y tener una lista de todos los bimestres 
+    #para resolver el seguimiento de fechas se solcuiona con una transformacion lineal que planteo su servidor y tener una lista de todos los bimestres 
     #que estan contenidos en el archivo excel al momento de abrirlo
     y=[]
-    yearconstante=201100
-    for k in range(1,añostranscurridos+2):
+    yearconstante=201104
+    c=0
+    for i in range(1,bimestresenarchivo+1):
 
-        for i in range(2,13,2):
-            
-            if k==(añostranscurridos+1) and bimestreactual==i:
-                r=yearconstante+100*(k-1)+i
-                y.append(r)    
-                return y,bimestresenarchivo
+        yearconstante+=2    
+        if (yearconstante-201100-100*c)==14:
+            c+=1 
+            yearconstante+=100
+            yearconstante-=12
 
-            if (bimestresdel2011-1)*2>i:
-                continue
-            r=yearconstante+100*(k-1)+i
-            y.append(r)    
-    return y,bimestresenarchivo
+        y.append(yearconstante)
 
 
-def orquesta(ruta:Path)->None:
-    
-    libro,excel=abrir_excel_por_ruta(ruta)
-    nombrearchivo=ruta.stem
-    nombrecarpeta=busqueda_patron_para_nombrar_carpetas(nombrearchivo)
+    return y
 
-    #aseguramos que se cree la carpeta donde vamos a vaciar la informacion
-    carpetadestino=gv.OutputManager_instancia.get_excel(nombrecarpeta)
-    strfecha,rangoenobjeto=string_eureka_fechas(libro)
-    bimestresarchivo=lista_verdad(strfecha)
-    #revisamos la fecha actual para saber cuantos bimestres vienen en el archivo de la CNBV sabemos que la informacion viene desde 201106
-
-    #function para bajar al final de los bimestres seleccionar todos los bancos y obtener la informacion 
-    final_bimestres_y_seleccionar_todos_los_bancos(bimestresarchivo)
-    #se ponen () al rangoobjeto para que se convierta en tupla    
-    rutadestino=carpetadestino/(nombrecarpeta+"_"+strfecha)
-    extraer_datos(rangoenobjeto,rutadestino,excel)
-    listabimestres,numerobimestres=lista_verdad(strfecha)
 
 
 #orquesta(x)
 
+#implementacion de clases para el manejo de rutas y archivos creados
 class rutaCarpetas:
     def __init__(self,rutasInsts:con.Paths,archivoExcel:Path)->None:
         self.rutasInsts=rutasInsts
@@ -436,19 +419,21 @@ class rutaCarpetas:
         listaarchivos=[]
         for archivos in self.carpetaDestino.iterdir():
             if archivos.is_file():
-                listaarchivos.append(archivos)
+                listaarchivos.append(archivos.stem)
         return listaarchivos
 
 R=rutaCarpetas(rutasInstaciadas,gv.ARCHIVOS_DATA_RAW[0]["ruta"])
-print(R.revisar_archivos_en_carpeta[0].stem)
+print(R.revisar_archivos_en_carpeta[0])
 class carajo:
     def __init__(self,hojaexcel:Any,mapa:rutaCarpetas)->None: 
         self.hojaExcel=hojaexcel
-        self.fecha_y_celda_tabla=string_eureka_fechas(self.hojaExcel)
-        self.listaFechas=lista_verdad(self.fecha_y_celda_tabla[0]) 
+        self.fecha,self.celda_tabla=string_eureka_fechas(self.hojaExcel)
+        #La lista de los bimestres contenidos en el archivo excel
+        self.listaFechas=lista_verdad(self.fecha)
         self.archivosCreados=mapa.revisar_archivos_en_carpeta
-        
-    def pendientes_de_consulta(self,mapa:rutaCarpetas)->list:
+    @property    
+    def pendientes_de_consulta(self)->list:
+
         pass
         
 
@@ -468,7 +453,9 @@ class pointCheckboxManager(coordenadaSimple):
         self._despachador=config_visual
 
         super().__init__(self._despachador["fecha_top"],self._despachador["tiempo_espera_entre_clicks"])
-
+        
+    def click_auxiliar_en_coordenada(self,punto:tuple)->None:
+        pyautogui.click(punto,interval=self._despachador["tiempo_espera_entre_clicks"])   
 
     def siguiente_cordenada(self,pasos:int):
         pyautogui.click(self._despachador["abajo"],clicks=abs(pasos),interval=self._despachador["tiempo_espera_entre_clicks"])
@@ -478,32 +465,57 @@ class pointCheckboxManager(coordenadaSimple):
         pyautogui.click(self._despachador["arriba"],clicks=abs(pasos),interval=self._despachador["tiempo_espera_entre_clicks"])
         self.radio._propiocepcion-=pasos
 
-    def obtener(self)->bool:
+    def obtener(self,casoparticular:bool=False)->bool:
         pyautogui.click(self._despachador["obtener"])
         time.sleep(CONFIG_COORDS["tiempo_espera_consulta"])
-        self.click_en_coordenada()
-        
+        if casoparticular:
+            #aqui debe avanzar a la fecha qeu consulto con la priopiocepcion y desmarcarlo mañana ahcemos eso
+
+            pass
+        else:
+            self.click_en_coordenada() 
+            pass
 
 class automataConsultas:
-    def __init__(self,punto_actual:pointCheckboxManager,obervador:carajo,matriz_fechas:list)->None:
+    def __init__(self,punto_actual:pointCheckboxManager,obervador:carajo)->None:
         self.hdwm_excel=None
         self.observador=obervador
-        self.matriz_fechas=matriz_fechas
+        self.matriz_fechas=observador.listaFechas
         self._navegante=punto_actual
         #le pasamos la radio para que pueda actualizar su propiocepcion
         self._navegante.radio= self
         self._propiocepcion = 0
+        #obtenemos la hoja excel del observador
+        self.hojaExcel=self.observador.hojaExcel
         self.propiocepcion_actual()
+        self.matriz_fechas.reverse()
 
-    def avanzar_a_fecha(self,pasos:int)->None:
-        if pasos>0:
-            self._navegante.siguiente_cordenada(pasos)
-            print("propiocepcion",self._propiocepcion)
-        if pasos<0:
-            self._navegante.anterior_cordenada(pasos)
-            print("propiocepcion",self._propiocepcion)
+        #con lo que hacemos la propiocepcion es con la fecha que se obtiene al iniciar el automata
+        self.ojos=string_eureka_fechas(self.hojaExcel)[0]
+
+    def avanzar_a_fecha(self,pasos:int,freno:int|None=None)->None:
+
+        if pasos == 0:
+            return
+        
+        if freno and abs(pasos)>=freno:
+            avance=freno
         else:
-            pass
+            avance=pasos
+
+        if pasos>0:
+            self._navegante.siguiente_cordenada(avance)
+        elif pasos<0:
+            self._navegante.anterior_cordenada(avance)
+
+        print("propiocepcion",self._propiocepcion)
+
+        if freno and abs(pasos)>=freno:
+            self._navegante.click_en_coordenada()
+
+        self.avanzar_a_fecha(pasos-avance,freno)
+
+
     def propiocepcion_actual(self)->None:
         print (self._propiocepcion)
 
@@ -513,21 +525,120 @@ class automataConsultas:
         self.avanzar_a_fecha(-self._propiocepcion)
         self._navegante.click_en_coordenada()
 
-    
+    def obtener_fecha_actual(self,casoespecial=False)->bool:
+        self._navegante.obtener(casoespecial)
+
+        try:
+            fechaEnString=string_eureka_fechas(self.hojaExcel)[0]
+            print(f"fecha actual obtenida: {fechaEnString}, coincide con la propiacepcion {self.matriz_fechas[self._propiocepcion]}")
+            print("fecha coincide con la actual, obtener")
+            if not fechaEnString==str(self.matriz_fechas[self._propiocepcion]): 
+                print("Implemnetando nueva logica")
+
+                return True
+            else: 
+                return False
+        except IndexError as e:
+            print(f"IndexError en obtener fecha actual, probablemente la propiocepcion se salio de rango No es un error critico continua {e}")
+            return False
+
+    @property
+    def obtener_fecha_caso_particular(self)->str:
+
+        self._navegante.click_en_coordenada()
+        self._navegante.obtener()
+        
+        
+        print("guardo tabla")
+        self.avanzar_a_fecha(self._propiocepcion-1)
+        fechaactual=string_eureka_fechas(self.hojaExcel)[0]
+        print(f"fecha actual obtenida: {fechaactual}, coincide con la propiacepcion {self.observador.listaFechas[-self._propiocepcion-1]}")
+        return fechaactual
+
+
+    @property
+    def listadefechas(self)->None:
+        print("lista de fechas del observador",self.observador.listaFechas)    
+        return None
+    @property
+    def limpiar(self)->None:
+        print("lista de fechas del observador",self.observador.listaFechas)    
+        return None
 
     def recorrer_pendientes(self,lisapendientes:list)->None:
-        self._navegante.obtener()
+        print(self.matriz_fechas)
+        print("lista de pendientes a consultar",lisapendientes)
+        self.obtener_fecha_actual()
+        posicion=0
+
         for indice in lisapendientes:
-    
+
             self.avanzar_a_fecha(indice-self._propiocepcion)
-            self._navegante.click_en_coordenada()   
-            self._navegante.obtener()
-            
+            self._navegante.click_en_coordenada()
+            posicion+=1   
+
+            if self.obtener_fecha_actual():                
+                self._propiocepcion-=2
+                freno=None
+                print("entro al caso particular")
+                break
 
             print("propiocepcion despues de avanzar",self._propiocepcion)
-            print("ya consulte")
-    
-        self.homming
+
+
+        ajuste=2
+        fechaDeCambio=self.matriz_fechas[self._propiocepcion-2]
+        print("fecha de cambio",fechaDeCambio)
+
+
+        for indice in lisapendientes[posicion-1:]:
+
+
+            #Pruebas para ajustar la propiocepcion con ayuda del debugger , simular los clciks manualmente mientras se testea
+            #print(indice)
+            #print(self.observador.listaFechas[-self._propiocepcion])
+            if indice==4:
+
+                print("entro al caso especial 4")
+            if ajuste>2:
+                freno=indice-self._propiocepcion-1
+
+            
+            self.avanzar_a_fecha(indice-self._propiocepcion,freno)
+            self._navegante.click_en_coordenada()
+            #print(self.observador.listaFechas[-self._propiocepcion])
+            if  not self.matriz_fechas[self._propiocepcion] in [201108,201106]:
+                self.obtener_fecha_actual(casoespecial=True)
+                self._propiocepcion-=ajuste
+                ajuste+=1
+
+
+            elif self.matriz_fechas[self._propiocepcion]==201108:
+                self._navegante.click_en_coordenada()
+                self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
+                self.obtener_fecha_actual(casoespecial=True) 
+                continue
+
+            elif self.matriz_fechas[self._propiocepcion]==201106:
+                self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
+                self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["fecha_bottom"])             
+                self.obtener_fecha_actual(casoespecial=True)
+                break 
+
+
+        #self.homming
+        print("Proceso de consultas finalizado")
+
+
+
+
+        # if  salio_del_bucle:
+        #     self.avanzar_a_fecha(self._propiocepcion)
+        #     self._navegante.click_en_coordenada()
+        #     self.obtener_fecha_caso_particular
+
+        #     print(self.propiocepcion_actual())       
+# IMPLEMENTACION DE NUEVA LOGICA PRA CUANDO EL ARCHIVO REGRESA A UNA CASILLA EN ESPECIFICO DEL CUADRO ACTIVEX
 
 
 class excelOpenManager:
@@ -544,52 +655,41 @@ time.sleep(2)
 casilla1=pointCheckboxManager(CONFIG_COORDS)
 mapa=rutaCarpetas(rutasInstaciadas,x)
 
-# casilla1.obtener()
-
-# for i in range(4): 
-
-#     estado = True if i % 2 == 0 else False
-    
-
-#     nueva_casilla = pointCheckboxManager(CONFIG_COORDS, estado, 1)
-    
-
-#     print(f"Ejecutando Casilla {i} con estado: {estado}")
-#     nueva_casilla.obtener()
-#     nueva_casilla.siguiente_cordenada()
-#     nueva_casilla.click_en_coordenada()
 lista=[202302,202304,202306,202308,202310,202312,202402,202404,202406,202408,202410,202412,202502,202504,202506]
 lista.reverse()
 
-lista_pendientes=[202406,202408,202410]
+lista_pendientes=[202302,202408,202410]
 indices = []
-for i, v in enumerate(lista):
-    if v in lista_pendientes:
-        indices.append(i)
+c=0
+for i in lista:
+    c+=1
+    for k in lista_pendientes:
+        if i==k:
+
+            indices.append(c)
+            break
 print(indices)
 
 libro,ventana=abrir_excel_por_ruta(x)
 
 observador=carajo(libro,mapa)
 
-print(observador.archivosCreados)
+hoja1=automataConsultas(casilla1,observador)
+hoja1.hdwm_excel=ventana.Hwnd
 
-# hoja1=automataConsultas(casilla1,mapa,lista)
-# hoja1.hdwm_excel=ventana.Hwnd
-
-# hoja1.recorrer_pendientes(indices)
+hoja1.recorrer_pendientes(range(10))
 
 
 # print(hoja1.matriz_fechas)
 
-# ####################################
-# #Implementacion de decoradores
-# def mi_primer_decorador(fechaBuscada:str):
+#################################### 
+#Implementacion de decoradores
+def mi_primer_decorador(fechaBuscada:str):
 
-#     def decorador_real(funcion):
+    def decorador_real(funcion):
 
-#             def envoltura(*args, **kwargs):
-#                 pass
+            def envoltura(*args, **kwargs):
+                pass
 
 
 
@@ -613,3 +713,45 @@ print(observador.archivosCreados)
 #         f.write(f"{attr}\n")
 
 # print(f"✅ ¡Listo! Se han guardado {len(atributos)} métodos en {ruta_txt.absolute()}")
+
+        # for k, indice in enumerate(lisapendientes[posicion:]):
+
+
+        #     Pruebas para ajustar la propiocepcion con ayuda del debugger , simular los clciks manualmente mientras se testea
+        #     print(indice)
+        #     print(self.observador.listaFechas[-self._propiocepcion])
+        #     if indice==4:
+
+        #         print("entro al caso especial 4")
+
+        #     self._propiocepcion-=ajuste
+            
+        #     self.avanzar_a_fecha(indice-ajuste+1-self._propiocepcion)
+        #     print(self.observador.listaFechas[-self._propiocepcion])
+        #     if  not self.matriz_fechas[self._propiocepcion] in [201108,201106]:
+        #         self._navegante.click_en_coordenada()
+
+        #         self._propiocepcion+=ajuste
+        #         self._propiocepcion+=ajuste-2
+        #         self.obtener_fecha_actual(casoespecial=True)
+        #         self._propiocepcion-=ajuste-2
+
+
+
+
+        #     self.avanzar_a_fecha(ajuste)
+        #     ajuste+=1
+
+        #     if self.matriz_fechas[self._propiocepcion]==201108:
+        #         self._navegante.click_en_coordenada()
+        #         self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
+        #         self.obtener_fecha_actual(casoespecial=True) 
+        #         continue
+
+        #     if self.matriz_fechas[self._propiocepcion]==201106:
+        #         self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
+        #         self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["fecha_bottom"])             
+        #         self.obtener_fecha_actual(casoespecial=True)
+        #         break 
+
+        #     self._navegante.click_en_coordenada()

@@ -1,2 +1,1 @@
-
-coord_abajo=(362,425)
+obtener_fecha_actual
