@@ -29,7 +29,7 @@ CONFIG_COORDS = {
     "fecha_bottom": (155, 423),
     "penultima": (156, 404),
     "tiempo_espera_consulta": 1,
-    "tiempo_espera_entre_clicks":0.5
+    "tiempo_espera_entre_clicks":0.8
 }
 
 coord_abajo=(362,425)
@@ -404,6 +404,7 @@ def lista_verdad(fecha:str)->list:
 
 #orquesta(x)
 
+
 #implementacion de clases para el manejo de rutas y archivos creados
 class rutaCarpetas:
     def __init__(self,rutasInsts:con.Paths,archivoExcel:Path)->None:
@@ -439,16 +440,31 @@ class carajo:
 
 
 #buscar_fechas_en_el_Activex_y_extraer(x,y)
+class boton:
+    def __init__(self,fecha:int,posicion:int,estadoInicial:bool|None=None):
+        self.fecha=fecha
+        self.posicion=posicion
+        self.estado=False
+    @property
+    def estado_actual(self)->bool:
+        return self.estado
+    
+    def cambiar_estado(self)->None:
+        self.estado=not self.estado
+
 class coordenadaSimple:
     def __init__(self,coordenada:tuple,intervalo:int)->None:
         self.coordenada=coordenada
         self.intervalo=intervalo 
-    def click_en_coordenada(self)->None:
+
+    def click_en_coordenada(self,boton:boton|None=None)->None:
         pyautogui.click(self.coordenada,interval=self.intervalo)
+        if boton:
+            boton.cambiar_estado()
 
 #Esta clase servira para saber si la cordenada dentro del checkbox esta activa o no, y nos porporcionara un boton mental
 class pointCheckboxManager(coordenadaSimple):
-    def __init__(self,config_visual:dict,radio=None)->None:
+    def __init__(self,config_visual:dict,radio:Any|None=None)->None:
         self.radio=radio
         self._despachador=config_visual
 
@@ -468,30 +484,46 @@ class pointCheckboxManager(coordenadaSimple):
     def obtener(self,casoparticular:bool=False)->bool:
         pyautogui.click(self._despachador["obtener"])
         time.sleep(CONFIG_COORDS["tiempo_espera_consulta"])
-        if casoparticular:
-            #aqui debe avanzar a la fecha qeu consulto con la priopiocepcion y desmarcarlo mañana ahcemos eso
-
-            pass
-        else:
-            self.click_en_coordenada() 
-            pass
 
 class automataConsultas:
     def __init__(self,punto_actual:pointCheckboxManager,obervador:carajo)->None:
         self.hdwm_excel=None
         self.observador=obervador
-        self.matriz_fechas=observador.listaFechas
+        #iniciamos la matriz de fechas que hay dentro del archivo excel que se esta consultando
+        self.matrizFechas=observador.listaFechas
+        #con las fechas creamos botones con todos inicializados en falso, osea desmarcados y solo el primero queda marcado tal y como esta el estandar
+        #del archivo excel, la fecha mas reciente esta marcada y consultada
+        self.matrizBotones:dict[int,boton]={}
         self._navegante=punto_actual
         #le pasamos la radio para que pueda actualizar su propiocepcion
         self._navegante.radio= self
         self._propiocepcion = 0
         #obtenemos la hoja excel del observador
         self.hojaExcel=self.observador.hojaExcel
-        self.propiocepcion_actual()
-        self.matriz_fechas.reverse()
+
+        self.propiocepcion_actual
+        self.matrizFechas.reverse()
+        try:
+            self.crear_botones()
+            # Como la primer fecha siemproe esta marcada el primer boton queda activo tal como los archivos
+            #accedemeos manualmenete al dictioanro con el metodo iter para ir uno a uno y para el primero encapsualmos en un next
+            # se implemnta nueva busqueda por la hoja excel en vez de inicializar las variables, no descarto la inicializacion de variables de momento se quitara
+            primer_boton = next(iter(self.matrizBotones.values()))
+            primer_boton.estado = True
+        except Exception as e:
+            print(f"Error critico no se pudieron crear los botones para guiar al automata, revisar la propiedad \"self.matrizFechas\"\n{e}")
+            self.matrizBotones={}
 
         #con lo que hacemos la propiocepcion es con la fecha que se obtiene al iniciar el automata
         self.ojos=string_eureka_fechas(self.hojaExcel)[0]
+    
+    def crear_botones(self):
+
+
+        for k, fechas in enumerate(self.matrizFechas):
+            x=boton(fechas,k)
+            self.matrizBotones[fechas]=x
+        
 
     def avanzar_a_fecha(self,pasos:int,freno:int|None=None)->None:
 
@@ -515,45 +547,63 @@ class automataConsultas:
 
         self.avanzar_a_fecha(pasos-avance,freno)
 
+    
+    def ir_apagar_boton(self,boton:boton):
 
-    def propiocepcion_actual(self)->None:
-        print (self._propiocepcion)
+        if boton.estado:
+            self.avanzar_a_fecha(boton.posicion-self._propiocepcion)
+            self._navegante.click_en_coordenada(boton)
+        
+
+    def ir_apagar_todos_los_botones_encendidos(self)->None:
+        for boton in self.matrizBotones.values():
+            if boton.estado:
+                self.ir_apagar_boton(boton)
+
+    def invertir_estado_varios_botones(self,cambios:list)->None:
+        for botonFecha in cambios:
+            self.matrizBotones[botonFecha].cambiar_estado()
+
+    @property            
+    def botones_encendidos(self)->list:
+        listaFechas=[]
+        for boton in self.matrizBotones.values():
+            if boton.estado:
+                listaFechas.append(boton.fecha)
+        return listaFechas
 
     @property
+    def propiocepcion_actual(self)->int:
+        print (self._propiocepcion)
+        return self._propiocepcion
+
     def homming(self)->None:
         activar_ventana_al_frente(self.hdwm_excel)
         self.avanzar_a_fecha(-self._propiocepcion)
         self._navegante.click_en_coordenada()
 
-    def obtener_fecha_actual(self,casoespecial=False)->bool:
-        self._navegante.obtener(casoespecial)
+    def obtener_fecha_actual(self,fechaRevision:int,casoespecial=False)->bool:
 
+
+        
         try:
-            fechaEnString=string_eureka_fechas(self.hojaExcel)[0]
-            print(f"fecha actual obtenida: {fechaEnString}, coincide con la propiacepcion {self.matriz_fechas[self._propiocepcion]}")
+            
+            print(f"fecha actual obtenida: {fechaRevision}, coincide con la propiacepcion {self.matrizFechas[self._propiocepcion]}")
             print("fecha coincide con la actual, obtener")
-            if not fechaEnString==str(self.matriz_fechas[self._propiocepcion]): 
+            if not fechaRevision==self.matrizFechas[self._propiocepcion]: 
                 print("Implemnetando nueva logica")
 
                 return True
             else: 
+
                 return False
+            
+
         except IndexError as e:
             print(f"IndexError en obtener fecha actual, probablemente la propiocepcion se salio de rango No es un error critico continua {e}")
             return False
 
-    @property
-    def obtener_fecha_caso_particular(self)->str:
 
-        self._navegante.click_en_coordenada()
-        self._navegante.obtener()
-        
-        
-        print("guardo tabla")
-        self.avanzar_a_fecha(self._propiocepcion-1)
-        fechaactual=string_eureka_fechas(self.hojaExcel)[0]
-        print(f"fecha actual obtenida: {fechaactual}, coincide con la propiacepcion {self.observador.listaFechas[-self._propiocepcion-1]}")
-        return fechaactual
 
 
     @property
@@ -566,67 +616,105 @@ class automataConsultas:
         return None
 
     def recorrer_pendientes(self,lisapendientes:list)->None:
-        print(self.matriz_fechas)
+        print(self.matrizFechas)
         print("lista de pendientes a consultar",lisapendientes)
-        self.obtener_fecha_actual()
-        posicion=0
 
-        for indice in lisapendientes:
+
+        cicloRoto=False
+        posicion=0
+        freno=None
+
+        for k,indice in enumerate(lisapendientes):
+
+            if k==0 and self.matrizFechas[k] not in [self.matrizFechas[i] for i in lisapendientes]:
+                self.ir_apagar_boton(self.matrizBotones[self.matrizFechas[k]])
+
+            if indice==7:
+                print("para para el debugger")
+
 
             self.avanzar_a_fecha(indice-self._propiocepcion)
-            self._navegante.click_en_coordenada()
-            posicion+=1   
+            fechaEnBucle=self.matrizFechas[indice]
+            
+            #validamos que el boton no es te seleccionado  
+            if not self.matrizBotones[fechaEnBucle].estado:
+                self._navegante.click_en_coordenada(boton=self.matrizBotones[fechaEnBucle])
 
-            if self.obtener_fecha_actual():                
-                self._propiocepcion-=2
-                freno=None
+
+            self._navegante.obtener()
+            fechaEnHoja=int(string_eureka_fechas(self.hojaExcel)[0])
+
+            if self.obtener_fecha_actual(fechaEnHoja):  
+                cicloRoto=True
+
+
+                ajustePropiocepcion=self.matrizBotones[fechaEnHoja].posicion-self._propiocepcion
+                self._propiocepcion+=ajustePropiocepcion
+
+                #cuando se desajusta para encontrar el boton que se encendio por error, es la diferencia entre el anterior indice menos el indice actual 
+                #de la lista de pendientes en la depuracion de una lista ejemplo [3,7,11], pasos=7-3=4 que es el borton que se encendio por error 
+                pasos=lisapendientes[k]-lisapendientes[k-1]
+                self.invertir_estado_varios_botones([fechaEnHoja,fechaEnBucle,self.matrizFechas[lisapendientes[k-1]],self.matrizFechas[pasos]])
+                self.ir_apagar_todos_los_botones_encendidos()
+
                 print("entro al caso particular")
                 break
+
+            self.ir_apagar_boton(self.matrizBotones[fechaEnHoja])
+            posicion+=1   
+
+
+ 
 
             print("propiocepcion despues de avanzar",self._propiocepcion)
 
 
-        ajuste=2
-        fechaDeCambio=self.matriz_fechas[self._propiocepcion-2]
-        print("fecha de cambio",fechaDeCambio)
+
+        print("fecha de cambio",fechaEnHoja)
+
+        if cicloRoto:
+            fechaQueRompeElBucle=fechaEnHoja
+            ajuste=indice
+            for indice in lisapendientes[posicion:]:
+
+                fechaEnBucle=self.matrizFechas[indice]
+                #Pruebas para ajustar la propiocepcion con ayuda del debugger , simular los clciks manualmente mientras se testea
+                #print(indice)
+                #print(self.observador.listaFechas[-self._propiocepcion])
+                if indice==11:
+                    print("para revisar con el debugger")
+                # 201406, 201310, 201302,201206,
+                self.avanzar_a_fecha(indice-self._propiocepcion)
+                self._navegante.click_en_coordenada(boton=self.matrizBotones[fechaEnBucle])
+                
+                #print(self.observador.listaFechas[-self._propiocepcion])
+                if  not self.matrizFechas[self._propiocepcion] in [201108,201106]:
+
+                    self._navegante.obtener()
+                    fechaEnHoja=int(string_eureka_fechas(self.hojaExcel)[0])
+                    self.obtener_fecha_actual(fechaEnHoja) 
+                    self._propiocepcion-=self.matrizBotones[fechaQueRompeElBucle].posicion+self._propiocepcion
+                    
 
 
-        for indice in lisapendientes[posicion-1:]:
+                    self.ir_apagar_boton(self.matrizBotones[fechaEnHoja])
 
 
-            #Pruebas para ajustar la propiocepcion con ayuda del debugger , simular los clciks manualmente mientras se testea
-            #print(indice)
-            #print(self.observador.listaFechas[-self._propiocepcion])
-            if indice==4:
+ 
+                elif self.matrizFechas[self._propiocepcion]==201108:
+                    self._navegante.click_en_coordenada()
+                    self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
+                    self._navegante.obtener()
+                    continue
 
-                print("entro al caso especial 4")
-            if ajuste>2:
-                freno=indice-self._propiocepcion-1
-
-            
-            self.avanzar_a_fecha(indice-self._propiocepcion,freno)
-            self._navegante.click_en_coordenada()
-            #print(self.observador.listaFechas[-self._propiocepcion])
-            if  not self.matriz_fechas[self._propiocepcion] in [201108,201106]:
-                self.obtener_fecha_actual(casoespecial=True)
-                self._propiocepcion-=ajuste
-                ajuste+=1
+                elif self.matrizFechas[self._propiocepcion]==201106:
+                    self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
+                    self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["fecha_bottom"])             
+                    self._navegante.obtener()
+                    break 
 
 
-            elif self.matriz_fechas[self._propiocepcion]==201108:
-                self._navegante.click_en_coordenada()
-                self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
-                self.obtener_fecha_actual(casoespecial=True) 
-                continue
-
-            elif self.matriz_fechas[self._propiocepcion]==201106:
-                self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
-                self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["fecha_bottom"])             
-                self.obtener_fecha_actual(casoespecial=True)
-                break 
-
-
-        #self.homming
+        #self.homming()
         print("Proceso de consultas finalizado")
 
 
@@ -677,10 +765,10 @@ observador=carajo(libro,mapa)
 hoja1=automataConsultas(casilla1,observador)
 hoja1.hdwm_excel=ventana.Hwnd
 
-hoja1.recorrer_pendientes(range(10))
+hoja1.recorrer_pendientes(range(5))
 
 
-# print(hoja1.matriz_fechas)
+# print(hoja1.matrizFechas)
 
 #################################### 
 #Implementacion de decoradores
@@ -728,7 +816,7 @@ def mi_primer_decorador(fechaBuscada:str):
             
         #     self.avanzar_a_fecha(indice-ajuste+1-self._propiocepcion)
         #     print(self.observador.listaFechas[-self._propiocepcion])
-        #     if  not self.matriz_fechas[self._propiocepcion] in [201108,201106]:
+        #     if  not self.matrizFechas[self._propiocepcion] in [201108,201106]:
         #         self._navegante.click_en_coordenada()
 
         #         self._propiocepcion+=ajuste
@@ -742,13 +830,13 @@ def mi_primer_decorador(fechaBuscada:str):
         #     self.avanzar_a_fecha(ajuste)
         #     ajuste+=1
 
-        #     if self.matriz_fechas[self._propiocepcion]==201108:
+        #     if self.matrizFechas[self._propiocepcion]==201108:
         #         self._navegante.click_en_coordenada()
         #         self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
         #         self.obtener_fecha_actual(casoespecial=True) 
         #         continue
 
-        #     if self.matriz_fechas[self._propiocepcion]==201106:
+        #     if self.matrizFechas[self._propiocepcion]==201106:
         #         self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
         #         self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["fecha_bottom"])             
         #         self.obtener_fecha_actual(casoespecial=True)
