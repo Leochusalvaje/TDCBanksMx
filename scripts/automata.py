@@ -6,10 +6,16 @@ import time
 import win32gui, win32con
 import routes as gv
 from pathlib import Path
-import pywintypes
+import pywintypes as wty
 import re
 from typing import Any
 import config as con
+import logging
+
+
+logging.basicConfig(level=logging.INFO,filename="Informacion.log",filemode="w",format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger=logging.getLogger("Automata")
+#seguimeinto de vairable con loggin
 
 pyautogui.FAILSAFE = True
 rutasInstaciadas=con.Paths()
@@ -18,18 +24,21 @@ rutasInstaciadas=con.Paths()
 # CONFIGURACIÓN
 # -------------------------------
 # Libro maestro donde se consolidan todos los datos
-ruta_maestro = gv.RUTA_OUTPUT/ "LibroControl.xlsx"
+
+
+ruta_maestro:Path = gv.RUTA_OUTPUT/ "LibroControl.xlsx"
+logger.info(f"Se asegura crear el libro maestro que servira para la extraccion de datos {ruta_maestro.relative_to(rutasInstaciadas.base)}")
 # Coordenadas de los clicks
 CONFIG_COORDS = {
     "abajo": (362, 425),
     "arriba": (362, 388),
-    "banco": (393, 363),
+    "bancos": (393, 363),
     "obtener": (76, 409),
     "fecha_top": (155, 387),
     "fecha_bottom": (155, 423),
     "penultima": (156, 404),
     "tiempo_espera_consulta": 1,
-    "tiempo_espera_entre_clicks":0.8
+    "tiempo_espera_entre_clicks":0.3
 }
 
 coord_abajo=(362,425)
@@ -52,7 +61,7 @@ def busqueda_patron_para_nombrar_carpetas(exp:str)-> str:
 
     if resultado:
         serie_nombre = resultado.group()
-        print(f"Serie extraída: {serie_nombre}") 
+        logger.info(f"Serie extraída: {serie_nombre}") 
     return serie_nombre
 
 
@@ -61,14 +70,14 @@ def activar_ventana_al_frente(hwnd, timeout=5)-> None:
     start = time.time()
     while time.time() - start < timeout:
         if hwnd:
-            # Maximizar ventana
+
             win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)             
-            # Traer al frente
             win32gui.SetForegroundWindow(hwnd) 
+            logger.info(f"Ventana {hwnd} traida al frente y maximizada con exito")
             break
         time.sleep(0.2)
     else:
-        print(f"No se pudo activar/maximizar la ventana con hwnd {hwnd}")
+        logger.critical(f"No se pudo activar/maximizar la ventana con hwnd {hwnd}, asgeurar que no se esten ejecutando procesos externos durante al ejecucion")
 
 def abrir_excel(ruta, reintentos=3) -> tuple:
     # Usar EnsureDispatch es genial porque asegura que las constantes de Excel se carguen
@@ -78,8 +87,8 @@ def abrir_excel(ruta, reintentos=3) -> tuple:
         wb = excel.Workbooks.Open(ruta)
         excel.Visible = True 
         
-        # 🌟 PASO CRUCIAL 1: Dale un momento a Windows para que "pinte" el proceso
-        time.sleep(0.5) # Subí un poco a 0.5 porque a veces 0.1 es muy rápido para el Render
+
+        time.sleep(0.5) 
         
         hwnd_excel = excel.Hwnd
         
@@ -90,40 +99,41 @@ def abrir_excel(ruta, reintentos=3) -> tuple:
                 # Intentamos activar la hoja lógicamente
                 wb.Sheets(1).Activate()
                 
-                print(f"Excel listo y al frente al intento {i+1}")
+                logger.info(f"Excel abierto con exito {i+1}")
                 return excel, wb
                 
-            except (pywintypes.error, Exception) as e:
-                print(f"Intento {i+1} fallido: {e}")
+            except (Exception) as e:
+                logger.error(f"Intento {i+1} fallido: {e}")
                 if i < reintentos - 1:
                     time.sleep(1)
                 else:
-                    print("Se agotaron los reintentos.")
+                    
                     # Si falla, cerramos para no dejar procesos "zombie" en el Administrador de Tareas
                     wb.Close(False)
                     excel.Quit()
+                    logger.critical("Se agotaron los reintentos.")
                     raise Exception("No se pudo poner Excel en primer plano.")
-                    
+
     except Exception as e:
-        print(f"Error crítico al abrir el archivo: {e}")
+        logger.critical(f"Error crítico al abrir el archivo: {e}")
         excel.Quit()
         return excel, wb
 
-def keepClick(t)-> None:
-    pyautogui.mouseDown()
-    time.sleep(t)
-    pyautogui.mouseUp()
-def moveToClickAndWait(x:int,y:int,t:float,tc:float)-> None:
-    pyautogui.moveTo(x, y, t)
-    keepClick(tc)
-    time.sleep(t) 
-def marcarSiguienteFecha(n: int)-> None:
-    for i in range(n):
-        moveToClickAndWait(coord_abajo[0],coord_abajo[1],0,0)
-    moveToClickAndWait(coord_fecha[0],coord_fecha[1],0,0)
-    moveToClickAndWait(coord_arriba[0],coord_arriba[1],0,0)
-    moveToClickAndWait(coord_fecha[0],coord_fecha[1],0,0)
-    moveToClickAndWait(coord_obtener[0],coord_obtener[1],0,0)
+# def keepClick(t)-> None:
+#     pyautogui.mouseDown()
+#     time.sleep(t)
+#     pyautogui.mouseUp()
+# def moveToClickAndWait(x:int,y:int,t:float,tc:float)-> None:
+#     pyautogui.moveTo(x, y, t)
+#     keepClick(tc)
+#     time.sleep(t) 
+# def marcarSiguienteFecha(n: int)-> None:
+#     for i in range(n):
+#         moveToClickAndWait(coord_abajo[0],coord_abajo[1],0,0)
+#     moveToClickAndWait(coord_fecha[0],coord_fecha[1],0,0)
+#     moveToClickAndWait(coord_arriba[0],coord_arriba[1],0,0)
+#     moveToClickAndWait(coord_fecha[0],coord_fecha[1],0,0)
+#     moveToClickAndWait(coord_obtener[0],coord_obtener[1],0,0)
 
 
 
@@ -232,11 +242,12 @@ def limpieza_datos_por_archivo(rutaArchivoParaLimpiar,NumerodeBimestresEnArchivo
     wb_cnbv.Close(SaveChanges=False)        
     excel.Quit()
 ####################Ruta de prueba##########################
-x=gv.ARCHIVOS_DATA_RAW[3]["ruta"]
+
 
 
 def validar_ruta(ruta:Path)->Path:
     if not ruta.exists() or not ruta.is_file():
+        
         raise FileNotFoundError(
                     f"No se encontró el archivo: {ruta.name}\n"
                     f"Se buscó en la ruta: {ruta.parent}\n"
@@ -245,9 +256,9 @@ def validar_ruta(ruta:Path)->Path:
     return ruta
 
 def extraer_datos(celda:Any,rutadestino:Path,ventanaexcel)->None:
-    rango=celda.CurrentRegion()
-    rutadellibrocontrol=validar_ruta(gv.Paths.output/"LibroControl.xlsx")
-    nombreventana=rutadellibrocontrol.stem
+    rango:Any=celda.CurrentRegion()
+    rutadellibrocontrol:Path=validar_ruta(gv.Paths.output/"LibroControl.xlsx")
+    nombreventana:str=rutadellibrocontrol.stem
     try:
         libroabierto=ventanaexcel.Workbooks(nombreventana)
         libroabierto.Close(SaveChanges=False)
@@ -312,18 +323,21 @@ def string_eureka_fechas(libro:Any)->tuple:
 
     if not re.match(con.patrones["fecha"],str_fecha):
         raise Exception("\nEl valor para buscar la fecha y nombrar las carpetas no se cumple. Validar la celda de donde se esta extrayendo la fecha.")
-        
+
+
     str_fecha=str_fecha
     celda_tabla=buscar_1
+    hayMasDeUnBancoEnLaHoja=len(tupla_datos[0])>3
 
-    return str_fecha,celda_tabla  
+    return str_fecha,celda_tabla,hayMasDeUnBancoEnLaHoja
 
 
-
+#No olvidar que si se va a manipualr la ventana se debe agregar su propiedad.Hwnd
 def abrir_excel_por_ruta(rutaexcel:Path)->tuple:
     #Validamos que la ruta exista
-    ruta=validar_ruta(rutaexcel)
 
+    ruta=validar_ruta(rutaexcel)
+    logger.info(f"Abriendo archivo excel {rutaexcel.stem}")
     ventanaex = win32.Dispatch("Excel.Application")
     hdwnd_excel = ventanaex.Hwnd
     ventanaex.Visible=True
@@ -396,6 +410,7 @@ def lista_verdad(fecha:str)->list:
             yearconstante-=12
 
         y.append(yearconstante)
+    y.reverse()
 
 
     return y
@@ -413,6 +428,7 @@ class rutaCarpetas:
         self.nombreSerie=con.patron.busqueda_patron_para_nombrar_carpetas(self.nombreArchivExcel)
         self.carpetaDestino=self.rutasInsts.output / self.nombreSerie
         self.carpetaDestino.mkdir(parents=True, exist_ok=True)
+    
 
 
     @property
@@ -423,23 +439,39 @@ class rutaCarpetas:
                 listaarchivos.append(archivos.stem)
         return listaarchivos
 
-R=rutaCarpetas(rutasInstaciadas,gv.ARCHIVOS_DATA_RAW[0]["ruta"])
-print(R.revisar_archivos_en_carpeta[0])
+
 class carajo:
     def __init__(self,hojaexcel:Any,mapa:rutaCarpetas)->None: 
         self.hojaExcel=hojaexcel
-        self.fecha,self.celda_tabla=string_eureka_fechas(self.hojaExcel)
+        self.fecha,self.celda_tabla,*_=string_eureka_fechas(self.hojaExcel)
+        
         #La lista de los bimestres contenidos en el archivo excel
         self.listaFechas=lista_verdad(self.fecha)
+        #uso de la clase rutaCarpetas
+        self.mapa=mapa
         self.archivosCreados=mapa.revisar_archivos_en_carpeta
+
+    @property
+    def dummy_archivos(self)->list:
+        return [f"{mapa.nombreSerie}_{i}" for i in self.listaFechas]       
+
+    
+    #El vigia va a revisar que los pendientes que hay en la carpeta
     @property    
     def pendientes_de_consulta(self)->list:
+        pendientes=set(self.dummy_archivos)-set(self.mapa.revisar_archivos_en_carpeta)
+        return list(pendientes)
 
-        pass
-        
+    @property    
+    def mapa_de_pendientes(self):
+        indices_pendientes=[]
+        for k, i in enumerate(self.dummy_archivos):
+            for j in self.pendientes_de_consulta:
+                if i==j:
+                    indices_pendientes.append(k)
 
+        return indices_pendientes
 
-#buscar_fechas_en_el_Activex_y_extraer(x,y)
 class boton:
     def __init__(self,fecha:int,posicion:int,estadoInicial:bool|None=None):
         self.fecha=fecha
@@ -471,7 +503,8 @@ class pointCheckboxManager(coordenadaSimple):
         super().__init__(self._despachador["fecha_top"],self._despachador["tiempo_espera_entre_clicks"])
         
     def click_auxiliar_en_coordenada(self,punto:tuple)->None:
-        pyautogui.click(punto,interval=self._despachador["tiempo_espera_entre_clicks"])   
+        pyautogui.click(punto,interval=self._despachador["tiempo_espera_entre_clicks"])
+        time.sleep(CONFIG_COORDS["tiempo_espera_consulta"])   
 
     def siguiente_cordenada(self,pasos:int):
         pyautogui.click(self._despachador["abajo"],clicks=abs(pasos),interval=self._despachador["tiempo_espera_entre_clicks"])
@@ -485,9 +518,14 @@ class pointCheckboxManager(coordenadaSimple):
         pyautogui.click(self._despachador["obtener"])
         time.sleep(CONFIG_COORDS["tiempo_espera_consulta"])
 
+
+
+
 class automataConsultas:
-    def __init__(self,punto_actual:pointCheckboxManager,obervador:carajo)->None:
-        self.hdwm_excel=None
+    def __init__(self,punto_actual:pointCheckboxManager,obervador:carajo,ventanaExcel:Any)->None:
+        #Esta es una ventana y un objeto para manipualr el excel posterior a esto si obtendremos el handle
+        self.ventanaExcel=ventanaExcel
+        self.hdwm_excel=ventanaExcel.Hwnd
         self.observador=obervador
         #iniciamos la matriz de fechas que hay dentro del archivo excel que se esta consultando
         self.matrizFechas=observador.listaFechas
@@ -502,7 +540,7 @@ class automataConsultas:
         self.hojaExcel=self.observador.hojaExcel
 
         self.propiocepcion_actual
-        self.matrizFechas.reverse()
+
         try:
             self.crear_botones()
             # Como la primer fecha siemproe esta marcada el primer boton queda activo tal como los archivos
@@ -582,28 +620,27 @@ class automataConsultas:
         self.avanzar_a_fecha(-self._propiocepcion)
         self._navegante.click_en_coordenada()
 
-    def obtener_fecha_actual(self,fechaRevision:int,casoespecial=False)->bool:
+    def validar_fecha_actual_y_extraer(self,fechaRevision:int,celda)->bool:
 
-
-        
         try:
             
-            print(f"fecha actual obtenida: {fechaRevision}, coincide con la propiacepcion {self.matrizFechas[self._propiocepcion]}")
+            print(f"fecha actual obtenida: {fechaRevision}, si coincide con la propiacepcion {self.matrizFechas[self._propiocepcion]}")
             print("fecha coincide con la actual, obtener")
             if not fechaRevision==self.matrizFechas[self._propiocepcion]: 
                 print("Implemnetando nueva logica")
 
                 return True
             else: 
-
+                archivo=f"{self.observador.dummy_archivos[self._propiocepcion]}.xlsx"
+                rutaArchivo=self.observador.mapa.carpetaDestino/archivo
+                extraer_datos(celda,rutaArchivo,self.ventanaExcel)
+                
                 return False
             
 
         except IndexError as e:
             print(f"IndexError en obtener fecha actual, probablemente la propiocepcion se salio de rango No es un error critico continua {e}")
             return False
-
-
 
 
     @property
@@ -619,18 +656,21 @@ class automataConsultas:
         print(self.matrizFechas)
         print("lista de pendientes a consultar",lisapendientes)
 
+        #Configuracion para marcar todos los bancos al inicio de la consulta
+        self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["bancos"])
+        self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["bancos"])
+        self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["obtener"])
+        #Manejo de caso atipico para marcar todos los bancos
+        if not string_eureka_fechas(self.hojaExcel)[2]:
+            self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["bancos"])
+
 
         cicloRoto=False
         posicion=0
-        freno=None
-
         for k,indice in enumerate(lisapendientes):
 
             if k==0 and self.matrizFechas[k] not in [self.matrizFechas[i] for i in lisapendientes]:
                 self.ir_apagar_boton(self.matrizBotones[self.matrizFechas[k]])
-
-            if indice==7:
-                print("para para el debugger")
 
 
             self.avanzar_a_fecha(indice-self._propiocepcion)
@@ -642,9 +682,11 @@ class automataConsultas:
 
 
             self._navegante.obtener()
-            fechaEnHoja=int(string_eureka_fechas(self.hojaExcel)[0])
+            fechaEnHoja,celda,*_=string_eureka_fechas(self.hojaExcel)
+            fechaEnHoja=int(fechaEnHoja)
+            
 
-            if self.obtener_fecha_actual(fechaEnHoja):  
+            if self.validar_fecha_actual_y_extraer(fechaEnHoja,celda):  
                 cicloRoto=True
 
 
@@ -662,21 +704,31 @@ class automataConsultas:
 
             self.ir_apagar_boton(self.matrizBotones[fechaEnHoja])
             posicion+=1   
-
-
- 
-
             print("propiocepcion despues de avanzar",self._propiocepcion)
-
-
-
         print("fecha de cambio",fechaEnHoja)
 
         if cicloRoto:
             fechaQueRompeElBucle=fechaEnHoja
-            ajuste=indice
-            for indice in lisapendientes[posicion:]:
 
+            for indice in lisapendientes[posicion:]:
+                if indice==len(self.matrizFechas)-2:
+                    self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
+                    self._navegante.obtener()
+                    fechaEnHoja,celda,*_=string_eureka_fechas(self.hojaExcel)
+                    fechaEnHoja=int(fechaEnHoja)
+                    self.validar_fecha_actual_y_extraer(fechaEnHoja,celda) 
+                    self._propiocepcion-=self.matrizBotones[fechaQueRompeElBucle].posicion+self._propiocepcion
+                    continue
+                if indice==len(self.matrizFechas)-1:
+                    self.avanzar_a_fecha(indice-self._propiocepcion)
+                    self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
+                    self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["fecha_bottom"])             
+                    self._navegante.obtener()
+                    fechaEnHoja,celda,*_=string_eureka_fechas(self.hojaExcel)
+                    fechaEnHoja=int(fechaEnHoja)
+                    self.validar_fecha_actual_y_extraer(fechaEnHoja,celda) 
+                    self._propiocepcion-=self.matrizBotones[fechaQueRompeElBucle].posicion+self._propiocepcion
+                    continue                 
                 fechaEnBucle=self.matrizFechas[indice]
                 #Pruebas para ajustar la propiocepcion con ayuda del debugger , simular los clciks manualmente mientras se testea
                 #print(indice)
@@ -688,46 +740,21 @@ class automataConsultas:
                 self._navegante.click_en_coordenada(boton=self.matrizBotones[fechaEnBucle])
                 
                 #print(self.observador.listaFechas[-self._propiocepcion])
-                if  not self.matrizFechas[self._propiocepcion] in [201108,201106]:
+                if indice<len(self.matrizFechas)-2:
 
                     self._navegante.obtener()
-                    fechaEnHoja=int(string_eureka_fechas(self.hojaExcel)[0])
-                    self.obtener_fecha_actual(fechaEnHoja) 
+                    fechaEnHoja,celda,*_=string_eureka_fechas(self.hojaExcel)
+                    fechaEnHoja=int(fechaEnHoja)
+                    self.validar_fecha_actual_y_extraer(fechaEnHoja,celda) 
                     self._propiocepcion-=self.matrizBotones[fechaQueRompeElBucle].posicion+self._propiocepcion
                     
-
-
                     self.ir_apagar_boton(self.matrizBotones[fechaEnHoja])
+        self.homming()
+        self.observador.hojaExcel.Close(SaveChanges=False)
+        self.ventanaExcel.DisplayAlerts = False
+        self.ventanaExcel.Quit()  
 
-
- 
-                elif self.matrizFechas[self._propiocepcion]==201108:
-                    self._navegante.click_en_coordenada()
-                    self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
-                    self._navegante.obtener()
-                    continue
-
-                elif self.matrizFechas[self._propiocepcion]==201106:
-                    self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
-                    self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["fecha_bottom"])             
-                    self._navegante.obtener()
-                    break 
-
-
-        #self.homming()
         print("Proceso de consultas finalizado")
-
-
-
-
-        # if  salio_del_bucle:
-        #     self.avanzar_a_fecha(self._propiocepcion)
-        #     self._navegante.click_en_coordenada()
-        #     self.obtener_fecha_caso_particular
-
-        #     print(self.propiocepcion_actual())       
-# IMPLEMENTACION DE NUEVA LOGICA PRA CUANDO EL ARCHIVO REGRESA A UNA CASILLA EN ESPECIFICO DEL CUADRO ACTIVEX
-
 
 class excelOpenManager:
 
@@ -738,34 +765,22 @@ class excelOpenManager:
         pass
 
 
-
+x=gv.ARCHIVOS_DATA_RAW[3]["ruta"]
 time.sleep(2)   
 casilla1=pointCheckboxManager(CONFIG_COORDS)
 mapa=rutaCarpetas(rutasInstaciadas,x)
 
-lista=[202302,202304,202306,202308,202310,202312,202402,202404,202406,202408,202410,202412,202502,202504,202506]
-lista.reverse()
+libro,ventana,*_=abrir_excel_por_ruta(x)
 
-lista_pendientes=[202302,202408,202410]
-indices = []
-c=0
-for i in lista:
-    c+=1
-    for k in lista_pendientes:
-        if i==k:
-
-            indices.append(c)
-            break
-print(indices)
-
-libro,ventana=abrir_excel_por_ruta(x)
 
 observador=carajo(libro,mapa)
+observador.archivosCreados
 
-hoja1=automataConsultas(casilla1,observador)
-hoja1.hdwm_excel=ventana.Hwnd
+hoja1=automataConsultas(casilla1,observador,ventana)
 
-hoja1.recorrer_pendientes(range(5))
+
+
+hoja1.recorrer_pendientes([0])
 
 
 # print(hoja1.matrizFechas)
@@ -782,64 +797,3 @@ def mi_primer_decorador(fechaBuscada:str):
 
 
 
-#print(type(gv.ARCHIVOS_DATA_RAW[0]["ruta"]))
-#print(type(Path().mkdir))
-# 1. Definimos la ruta usando Pathlib (como lo hablamos hoy)
-# ventanaex = win32.Dispatch("Excel.Application")
-# libro=ventanaex.Workbooks.Open(x).Worksheets(1).Cells
-# ruta_txt = Path("metodos_excel_hoja.txt")
-
-# 2. Obtenemos la lista de atributos y la limpiamos
-# Filtramos los que empiezan con "_" porque suelen ser internos de Python
-# atributos = [attr for attr in dir(libro) if not attr.startswith("_")]
-
-# 3. Guardamos en el archivo
-# with ruta_txt.open("w", encoding="utf-8") as f:
-#     f.write(f"MÉTODOS Y PROPIEDADES DISPONIBLES PARA: {type(libro)}\n")
-#     f.write("="*50 + "\n")
-#     for attr in atributos:
-#         f.write(f"{attr}\n")
-
-# print(f"✅ ¡Listo! Se han guardado {len(atributos)} métodos en {ruta_txt.absolute()}")
-
-        # for k, indice in enumerate(lisapendientes[posicion:]):
-
-
-        #     Pruebas para ajustar la propiocepcion con ayuda del debugger , simular los clciks manualmente mientras se testea
-        #     print(indice)
-        #     print(self.observador.listaFechas[-self._propiocepcion])
-        #     if indice==4:
-
-        #         print("entro al caso especial 4")
-
-        #     self._propiocepcion-=ajuste
-            
-        #     self.avanzar_a_fecha(indice-ajuste+1-self._propiocepcion)
-        #     print(self.observador.listaFechas[-self._propiocepcion])
-        #     if  not self.matrizFechas[self._propiocepcion] in [201108,201106]:
-        #         self._navegante.click_en_coordenada()
-
-        #         self._propiocepcion+=ajuste
-        #         self._propiocepcion+=ajuste-2
-        #         self.obtener_fecha_actual(casoespecial=True)
-        #         self._propiocepcion-=ajuste-2
-
-
-
-
-        #     self.avanzar_a_fecha(ajuste)
-        #     ajuste+=1
-
-        #     if self.matrizFechas[self._propiocepcion]==201108:
-        #         self._navegante.click_en_coordenada()
-        #         self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
-        #         self.obtener_fecha_actual(casoespecial=True) 
-        #         continue
-
-        #     if self.matrizFechas[self._propiocepcion]==201106:
-        #         self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["penultima"])
-        #         self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["fecha_bottom"])             
-        #         self.obtener_fecha_actual(casoespecial=True)
-        #         break 
-
-        #     self._navegante.click_en_coordenada()

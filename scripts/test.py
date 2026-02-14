@@ -1,5 +1,5 @@
 import pytest
-import automatizar_v1_0 as aut
+import scripts.automata as aut
 import pathlib as path
 
 def test_obtener_serie():
