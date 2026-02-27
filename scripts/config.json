@@ -1,0 +1,18 @@
+{   
+    "ruta_base":".",
+    "bimestre_inicial":"201106",
+    "bimestre_final":"202506",
+    "automata_coordenadas": {
+        "abajo": [362, 425],
+        "arriba": [362, 388],
+        "bancos": [393, 363],
+        "obtener": [76, 409],
+        "fecha_top": [155, 387],
+        "fecha_bottom": [155, 423],
+        "penultima": [156, 404]
+    },
+    "tiempos_espera": {
+        "consulta": 1,
+        "entre_clicks": 0.3
+    }
+}

@@ -3,22 +3,7 @@ from pathlib import Path
 from config import Paths
 import os
 
-class ProjectLayout:
-    def __init__(self):
-        self.paths=Paths
-    def create(self):
-        for path in self.paths.ALL:
-            path.mkdir(parents=True, exist_ok=True)
 
-class OutputManager:
-    def __init__(self):
-        self.base = Paths.output
-
-    def get_excel(self, ruta: str):
-        path = self.base / ruta
-        path.parent.mkdir(parents=True, exist_ok=True)
-        return path
-OutputManager_instancia=OutputManager()
 
 RUTA_BASE = Path(__file__).parent.parent
 RUTA_PRIME=RUTA_BASE/"Routes"

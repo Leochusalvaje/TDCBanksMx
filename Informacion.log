@@ -1,3 +1,16 @@
-2026-02-12 22:53:29,622 - Automata - INFO - Se asegura crear el libro maestro que servira para la extraccion de datos Output\LibroControl.xlsx
-2026-02-12 22:53:31,623 - Automata - INFO - Abriendo archivo excel 040_12e_R11_Distribuci�n de tarjetas por impagos consecutivos
-2026-02-12 22:53:47,770 - Automata - INFO - Ventana 1379436 traida al frente y maximizada con exito
+2026-02-25 23:05:38,491 - [Orquestador] - INFO - --- Iniciando validación de rutas ---
+2026-02-25 23:05:38,493 - [config] - INFO - Asegurando directorio: TDCBanksMx
+2026-02-25 23:05:38,494 - [config] - INFO - Asegurando directorio: TDCBanksMx\Data
+2026-02-25 23:05:38,494 - [config] - INFO - Asegurando directorio: TDCBanksMx\Data\datosTarjetasCredito
+2026-02-25 23:05:38,494 - [config] - INFO - Asegurando directorio: TDCBanksMx\Output
+2026-02-25 23:05:38,495 - [config] - INFO - Asegurando directorio: TDCBanksMx\Datasets
+2026-02-25 23:05:38,495 - [config] - INFO - Asegurando directorio: TDCBanksMx\scripts
+2026-02-25 23:05:38,496 - [config] - INFO - Archivo crítico encontrado en: TDCBanksMx\scripts\config.json
+2026-02-25 23:05:38,496 - [config] - INFO - Archivo crítico encontrado en: TDCBanksMx\Output\LibroControl.xlsx
+2026-02-25 23:05:38,496 - [Automata] - INFO - Bimestres contenidos en cada archivo excel de la CNBV: 85 Este parametro es crucial y se genera con los parametros del config.json ingresados por el USUARIO humano para el funcionamiento del automata, si no se esta extrayendo la cantidad correcta de bimestres revisar que las fechas de entrada sean correctas y que se este cumpliendo el patron establecido en la clase RegexpPatrones
+2026-02-25 23:05:38,497 - [Orquestador] - INFO - Procesando archivo: 040_12d_R1_Número de tarjetas de crédito por institución.xls
+2026-02-25 23:05:38,981 - [config] - INFO - Serie extraída: 040_12d_R1
+2026-02-25 23:05:39,486 - [Automata] - INFO - Tarea pendiente creada en objeto para consumo del automata: Serie: 040_12d_R1 | Archivo: 040_12d_R1_Número de tarjetas de crédito por institución.xls | Pendientes: 85
+2026-02-25 23:05:40,405 - [Orquestador] - INFO - Procesando archivo: 040_12d_R2_Saldo de tarjetas de crédito por institución.xls
+2026-02-25 23:05:40,759 - [config] - INFO - Serie extraída: 040_12d_R2
+2026-02-25 23:05:41,133 - [Automata] - INFO - Tarea pendiente creada en objeto para consumo del automata: Serie: 040_12d_R2 | Archivo: 040_12d_R2_Saldo de tarjetas de crédito por institución.xls | Pendientes: 85

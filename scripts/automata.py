@@ -1,5 +1,18 @@
+# INICIACIÓN DEL LOGGING
+# ------------------------------------------------------------------------------
+# Para que el logging capture correctamente los eventos de todos los módulos
+# (especialmente decoradores de clase como @crear_directorios y configuraciones
+# que se ejecutan al importar), la configuración de logging.basicConfig DEBE ser
+# lo PRIMERO que se ejecute en el script principal, antes de los imports.
+#
+# Se usa 'force=True' para asegurar que esta configuración sea la mande mayor jerarquia y 
+# no sea bloqueada por imports previos o librerías externas.
+# ==============================================================================
+from __future__ import annotations
+import logging
+logger=logging.getLogger("Automata")
+from dataclasses import dataclass
 import pandas as pd
-import openpyxl
 import win32com.client as win32
 import pyautogui
 import time
@@ -8,17 +21,12 @@ import routes as gv
 from pathlib import Path
 import pywintypes as wty
 import re
-from typing import Any
-import config as con
-import logging
-
-
-logging.basicConfig(level=logging.INFO,filename="Informacion.log",filemode="w",format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-logger=logging.getLogger("Automata")
-#seguimeinto de vairable con loggin
+from typing import Any,TYPE_CHECKING
+if TYPE_CHECKING:
+    from config import Paths,DescripcionArchivosCriticos,RegexpPatrones
 
 pyautogui.FAILSAFE = True
-rutasInstaciadas=con.Paths()
+
 
 # -------------------------------
 # CONFIGURACIÓN
@@ -26,14 +34,14 @@ rutasInstaciadas=con.Paths()
 # Libro maestro donde se consolidan todos los datos
 
 
-ruta_maestro:Path = gv.RUTA_OUTPUT/ "LibroControl.xlsx"
-logger.info(f"Se asegura crear el libro maestro que servira para la extraccion de datos {ruta_maestro.relative_to(rutasInstaciadas.base)}")
+#ruta_maestro:Path = gv.RUTA_OUTPUT/ "LibroControl.xlsx"
+#logger.info(f"Se asegura crear el libro maestro que servira para la extraccion de datos {ruta_maestro.relative_to(rutasInstaciadas.base)}")
 # Coordenadas de los clicks
 CONFIG_COORDS = {
     "abajo": (362, 425),
     "arriba": (362, 388),
     "bancos": (393, 363),
-    "obtener": (76, 409),
+    "obtener": (76, 409), 
     "fecha_top": (155, 387),
     "fecha_bottom": (155, 423),
     "penultima": (156, 404),
@@ -50,21 +58,6 @@ coord_fecha=(155,423)
 coord_ultima=(155,385)
 coord_penultima=(156,404)
 
-def busqueda_patron_para_nombrar_carpetas(exp:str)-> str:
-        # Explicación del patrón:
-    # ^[^_]+  -> Salta el primer bloque (040)
-    # _[^_]+  -> Salta el segundo bloque (12e)
-    # _([^_]+) -> Captura lo que hay en el tercer bloque hasta el siguiente guion bajo
-    patron = con.regexp_patrones.ARCHIVOSCNBV
-
-    resultado = re.search(patron, exp)
-
-    if resultado:
-        serie_nombre = resultado.group()
-        logger.info(f"Serie extraída: {serie_nombre}") 
-    return serie_nombre
-
-
 #Funciones auxialiares
 def activar_ventana_al_frente(hwnd, timeout=5)-> None:
     start = time.time()
@@ -79,185 +72,10 @@ def activar_ventana_al_frente(hwnd, timeout=5)-> None:
     else:
         logger.critical(f"No se pudo activar/maximizar la ventana con hwnd {hwnd}, asgeurar que no se esten ejecutando procesos externos durante al ejecucion")
 
-def abrir_excel(ruta, reintentos=3) -> tuple:
-    # Usar EnsureDispatch es genial porque asegura que las constantes de Excel se carguen
-    excel = win32.gencache.EnsureDispatch("Excel.Application")
-    
-    try:
-        wb = excel.Workbooks.Open(ruta)
-        excel.Visible = True 
-        
-
-        time.sleep(0.5) 
-        
-        hwnd_excel = excel.Hwnd
-        
-        for i in range(reintentos):
-            try:
-                # Intentamos activar la ventana físicamente
-                activar_ventana_al_frente(hwnd_excel)
-                # Intentamos activar la hoja lógicamente
-                wb.Sheets(1).Activate()
-                
-                logger.info(f"Excel abierto con exito {i+1}")
-                return excel, wb
-                
-            except (Exception) as e:
-                logger.error(f"Intento {i+1} fallido: {e}")
-                if i < reintentos - 1:
-                    time.sleep(1)
-                else:
-                    
-                    # Si falla, cerramos para no dejar procesos "zombie" en el Administrador de Tareas
-                    wb.Close(False)
-                    excel.Quit()
-                    logger.critical("Se agotaron los reintentos.")
-                    raise Exception("No se pudo poner Excel en primer plano.")
-
-    except Exception as e:
-        logger.critical(f"Error crítico al abrir el archivo: {e}")
-        excel.Quit()
-        return excel, wb
-
-# def keepClick(t)-> None:
-#     pyautogui.mouseDown()
-#     time.sleep(t)
-#     pyautogui.mouseUp()
-# def moveToClickAndWait(x:int,y:int,t:float,tc:float)-> None:
-#     pyautogui.moveTo(x, y, t)
-#     keepClick(tc)
-#     time.sleep(t) 
-# def marcarSiguienteFecha(n: int)-> None:
-#     for i in range(n):
-#         moveToClickAndWait(coord_abajo[0],coord_abajo[1],0,0)
-#     moveToClickAndWait(coord_fecha[0],coord_fecha[1],0,0)
-#     moveToClickAndWait(coord_arriba[0],coord_arriba[1],0,0)
-#     moveToClickAndWait(coord_fecha[0],coord_fecha[1],0,0)
-#     moveToClickAndWait(coord_obtener[0],coord_obtener[1],0,0)
-
-
-
-
-def limpieza_datos_por_archivo(rutaArchivoParaLimpiar,NumerodeBimestresEnArchivo)-> None:
-
-    excel, wb_cnbv = abrir_excel(rutaArchivoParaLimpiar)
-    ws_cnbv = wb_cnbv.Sheets(1)
-
-
-    def traer_tabla(origen):
-
-        #se seleciona B9 para poder seleccioanr toda la tabla ya que ahi inicia y esto no cambia
-        data = origen.Range("B9").CurrentRegion.Value
-        df = pd.DataFrame(data[1:], columns=data[0])
-        #La siguiente linea seleciona el origen que va a tomar el nombre de los archivos aqui debes selecioanr una celda en la que siempre haya la fecha de la consulta
-        #para los arhcivos de uan tablas es C9 y los demas es c10
-        valor_c9 = origen.Range("C9").Value
-        valor_c10 = origen.Range("C10").Value
-
-        if valor_c9 is int:
-
-            buscar_fecha = valor_c9
-        else:
-            buscar_fecha=valor_c10
-        try:
-            nombre_extra=str(buscar_fecha)
-        except (ValueError, TypeError):
-            print("Error: No se encontró una fecha válida en C9 ni en C10")
-            nombre_extra = "FECHA_DESCONOCIDA"
-        archivo_origen=busqueda_patron_para_nombrar_carpetas(rutaArchivoParaLimpiar)
-        # Crear el nombre del archivo
-        nueva_carpeta=gv.RUTA_OUTPUT / archivo_origen
-        #crea la carpeta destino
-        nueva_carpeta.mkdir(parents=True, exist_ok=True)
-        nombre_archivo=f"{archivo_origen}_{nombre_extra}.xlsx"
-        ruta_final=nueva_carpeta/nombre_archivo
-        # -------------------------------
-        # GUARDAR EN LIBRO MAESTRO
-        # -------------------------------
-        try:
-            wb_maestro = openpyxl.load_workbook(ruta_maestro)
-            ws_maestro = wb_maestro.active
-        except FileNotFoundError:
-            wb_maestro = openpyxl.Workbook()
-            ws_maestro = wb_maestro.active
-
-        # Escribir datos en la hoja
-        for r_idx, row in enumerate(df.values, 2):  # comienza en fila 2 para encabezado
-            for c_idx, value in enumerate(row, 1):
-                ws_maestro.cell(row=r_idx, column=c_idx, value=value)
-
-        # Encabezados
-        for c_idx, header in enumerate(df.columns, 1):
-            ws_maestro.cell(row=1, column=c_idx, value=header)
-
-        # Guardar libro maestro
-        #LibroControl
-        wb_maestro.save(gv.fix_long_path(str(ruta_final)))
-
-        # -------------------------------
-        # CERRAR LIBRO CNBV
-        # -------------------------------
-        activar_ventana_al_frente(excel.Hwnd)
-
-        print("Tabla copiada correctamente al libro maestro.")
-
-
-    max_iteraciones = NumerodeBimestresEnArchivo
-    contador = 0
-
-    while contador < max_iteraciones:
-            valor_actual = ws_cnbv.Range("D37").Value
-            time.sleep(0.5)
-                # Aquí llamas a tu función de clicks, por ejemplo:
-            if contador==0:
-                print("Celda vacía, ejecutando clicks...")  
-                time.sleep(0.5)
-                moveToClickAndWait(coord_desmarcar[0],coord_desmarcar[1],0,0)
-                #algunos archivos de la cnbv no es necesario marcar y desmarcar la casilal de bancos para selccioanr todos basta con un solo marcado
-                #agregar o quitar la siguiente linea segun sea el caso
-                moveToClickAndWait(coord_banco[0],coord_banco[1],0,0)
-                moveToClickAndWait(coord_banco[0],coord_banco[1],2,0)
-                moveToClickAndWait(coord_abajo[0],coord_abajo[1],0,6)
-                moveToClickAndWait(coord_fecha[0],coord_fecha[1],0,0)
-                moveToClickAndWait(coord_obtener[0],coord_obtener[1],0,0)
-                
-            elif contador<=max_iteraciones-3:
-                print(f"Celda cambió: {valor_actual}")
-                # Continuar con siguiente acción o rango
-                traer_tabla(ws_cnbv)
-                marcarSiguienteFecha(20-contador)
-            else:
-                traer_tabla(ws_cnbv)
-                moveToClickAndWait(coord_fecha[0],coord_fecha[1],0,0)
-                moveToClickAndWait(coord_penultima[0],coord_penultima[1],0,0)
-                moveToClickAndWait(coord_obtener[0],coord_obtener[1],0,0)
-                traer_tabla(ws_cnbv)
-                moveToClickAndWait(coord_penultima[0],coord_penultima[1],0,0)
-                moveToClickAndWait(coord_ultima[0],coord_ultima[1],0,0)
-                moveToClickAndWait(coord_obtener[0],coord_obtener[1],0,0)
-                traer_tabla(ws_cnbv)
-                break
-            contador += 1
-    
-    wb_cnbv.Close(SaveChanges=False)        
-    excel.Quit()
-####################Ruta de prueba##########################
-
-
-
-def validar_ruta(ruta:Path)->Path:
-    if not ruta.exists() or not ruta.is_file():
-        
-        raise FileNotFoundError(
-                    f"No se encontró el archivo: {ruta.name}\n"
-                    f"Se buscó en la ruta: {ruta.parent}\n"
-                    f"Por favor, verifica la carpeta \"Data\""
-                )
-    return ruta
 
 def extraer_datos(celda:Any,rutadestino:Path,ventanaexcel)->None:
     rango:Any=celda.CurrentRegion()
-    rutadellibrocontrol:Path=validar_ruta(gv.Paths.output/"LibroControl.xlsx")
+    rutadellibrocontrol:Path=gv.Paths.output/"LibroControl.xlsx"
     nombreventana:str=rutadellibrocontrol.stem
     try:
         libroabierto=ventanaexcel.Workbooks(nombreventana)
@@ -293,7 +111,7 @@ def extraer_datos(celda:Any,rutadestino:Path,ventanaexcel)->None:
                     pass     
     return None
 
-def string_eureka_fechas(libro:Any)->tuple:
+def string_eureka_fechas(libro:Any,patronValidador:RegexpPatrones)->tuple:
     primerhoja=libro.Sheets(1)
     primerhoja.Activate()
     # buscar_celda=primerhoja.Cells.Find(What="Banco")
@@ -321,7 +139,7 @@ def string_eureka_fechas(libro:Any)->tuple:
         str_fecha = str(int(tupla_datos[1][2]))
         print("Formato alternativo detectado")
 
-    if not re.match(con.patrones["fecha"],str_fecha):
+    if not re.match(patronValidador.patrones["fecha"],str_fecha):
         raise Exception("\nEl valor para buscar la fecha y nombrar las carpetas no se cumple. Validar la celda de donde se esta extrayendo la fecha.")
 
 
@@ -331,77 +149,34 @@ def string_eureka_fechas(libro:Any)->tuple:
 
     return str_fecha,celda_tabla,hayMasDeUnBancoEnLaHoja
 
-
 #No olvidar que si se va a manipualr la ventana se debe agregar su propiedad.Hwnd
-def abrir_excel_por_ruta(rutaexcel:Path)->tuple:
-    #Validamos que la ruta exista
-
-    ruta=validar_ruta(rutaexcel)
-    logger.info(f"Abriendo archivo excel {rutaexcel.stem}")
-    ventanaex = win32.Dispatch("Excel.Application")
-    hdwnd_excel = ventanaex.Hwnd
-    ventanaex.Visible=True
 
 
-
-    try:
-        libro=ventanaex.Workbooks.Open(ruta)
-        win32gui.ShowWindow(hdwnd_excel, win32con.SW_MAXIMIZE)
-        win32gui.SetForegroundWindow(hdwnd_excel)
-
-    #tener cuidado de no abrir un libro antes por que si no falla traer al frente el archivo de consultas
-
-    except FileNotFoundError:
-        print("El archivo no existe en esa ruta")
-    except Exception as e:
-        print(f"Ocurrió un error inesperado con la libreria win32com.client {type(e).__name__}: {e}\n")
-    print("Excel abierto y traido al frente")
-    #libro.Close(False)
-    #ventanaex.Quit()
-    return libro,ventanaex
-
-
-def revisar_carpeta_output_y_crear_carpeta(archivoecxel: Path)-> Path:
-    ruta=validar_ruta(archivoecxel)
-    gv.RUTA_OUTPUT.mkdir(parents=True, exist_ok=True)
-    rutaNueva=gv.RUTA_OUTPUT / busqueda_patron_para_nombrar_carpetas(ruta.name)
-    rutaNueva.mkdir(parents=True, exist_ok=True)
-    return rutaNueva
-
-def one_click(numerodeclicks,coordenada)->None:
-    c=0
-    while (numerodeclicks)>=c:
-        pyautogui.click(coordenada)
-        c+=1
-    return None
-
-def final_bimestres_y_seleccionar_todos_los_bancos(numerodeclicks)->None:
-    one_click(numerodeclicks-3,coord_abajo)
-    one_click(2,coord_banco)
-    #bloquepara obtener informacion aqui es un punto critico de fallos
-    one_click(1,coord_obtener)
-#Revisa el archivo para saber cuantos bimestres contiene, y genera un lista de los bimestres contenidos
-
-
-def lista_verdad(fecha:str)->list:
+def lista_verdad(bimestreInicial:str,bimestreFinal,patronValidador:RegexpPatrones)->list:
     
-    con.patron.revisar_patron(con.patron.FECHAS,fecha)
-    yearbase=2011
+    fecha=patronValidador.revisar_patron(patronValidador.FECHAS,bimestreFinal)
+
     try:
-        añosultimobimestre=int(fecha[:4])
-        añostranscurridos=añosultimobimestre-yearbase
-        bimestreactual=int(fecha[-2:])
-    except ValueError as e:
-        print(f"Formato del string fecha incorrecto {e}")
-    bimestresdel2011=4
-    bimestresenarchivo=6*(añostranscurridos-1)+(bimestresdel2011+int(bimestreactual/2))
-    print(f"bimestres en el archivo:{bimestresenarchivo}")
+        yearbase=int(bimestreInicial[:4])
+        yearUltimobimestre=int(fecha[:4])
+        yearsTranscurridos=yearUltimobimestre-yearbase
+        bimestreActual=(14-int(fecha[-2:]))/2
+    except (ValueError, TypeError) as e:
+        # Usamos .exception para que guarde el rastro (traceback)
+        # Y metemos type(e).__name__ para que el mensaje claro
+        logger.exception(f"[{type(e).__name__}] Error fatal en fechas: {bimestreInicial} y {bimestreFinal} revisar que se esten ingresando como strings. Detalle: {e}")
+        # Esto es lo que hace que el programa "muera" o falle rápido
+        raise
+
+    bimestreBase=int(bimestreInicial[-2:])/2
+    bimestresEnArchivo=int(6*(yearsTranscurridos-1)+(bimestreBase+bimestreActual))
+    logger.info(f"Bimestres contenidos en cada archivo excel de la CNBV: {bimestresEnArchivo} Este parametro es crucial y se genera con los parametros del config.json ingresados por el USUARIO humano para el funcionamiento del automata, si no se esta extrayendo la cantidad correcta de bimestres revisar que las fechas de entrada sean correctas y que se este cumpliendo el patron establecido en la clase RegexpPatrones")
     #para resolver el seguimiento de fechas se solcuiona con una transformacion lineal que planteo su servidor y tener una lista de todos los bimestres 
     #que estan contenidos en el archivo excel al momento de abrirlo
     y=[]
-    yearconstante=201104
+    yearconstante=int(bimestreInicial)
     c=0
-    for i in range(1,bimestresenarchivo+1):
+    for _ in range(1,bimestresEnArchivo+1):
 
         yearconstante+=2    
         if (yearconstante-201100-100*c)==14:
@@ -415,22 +190,14 @@ def lista_verdad(fecha:str)->list:
 
     return y
 
-
-
-#orquesta(x)
-
-
-#implementacion de clases para el manejo de rutas y archivos creados
 class rutaCarpetas:
-    def __init__(self,rutasInsts:con.Paths,archivoExcel:Path)->None:
-        self.rutasInsts=rutasInsts
+    def __init__(self,rutaCarpetaOutput:Path,archivoExcel:Path,patronvalidador:RegexpPatrones)->None:
+        self.rutaArchivoExcel=archivoExcel
         self.nombreArchivExcel=archivoExcel.stem
-        self.nombreSerie=con.patron.busqueda_patron_para_nombrar_carpetas(self.nombreArchivExcel)
-        self.carpetaDestino=self.rutasInsts.output / self.nombreSerie
+        self.nombreSerie=patronvalidador.busqueda_patron_para_nombrar_carpetas(self.nombreArchivExcel)
+        self.carpetaDestino=rutaCarpetaOutput / self.nombreSerie
         self.carpetaDestino.mkdir(parents=True, exist_ok=True)
     
-
-
     @property
     def revisar_archivos_en_carpeta(self)->list:
         listaarchivos=[]
@@ -438,28 +205,35 @@ class rutaCarpetas:
             if archivos.is_file():
                 listaarchivos.append(archivos.stem)
         return listaarchivos
+@dataclass  
+class tareaPendiente:
+    rutaArchivoExcel:Path
+    rutaCarpetaDestino:Path
+    nombreSerie:str
+    listaPendientes:list
 
+    def __repr__(self):
+        return (f"Serie: {self.nombreSerie} | "
+                f"Archivo: {self.rutaArchivoExcel.name} | "
+                f"Pendientes: {len(self.listaPendientes)}")
 
 class carajo:
-    def __init__(self,hojaexcel:Any,mapa:rutaCarpetas)->None: 
-        self.hojaExcel=hojaexcel
-        self.fecha,self.celda_tabla,*_=string_eureka_fechas(self.hojaExcel)
-        
+    def __init__(self,mapa:rutaCarpetas,listaFechas:list)->None: 
         #La lista de los bimestres contenidos en el archivo excel
-        self.listaFechas=lista_verdad(self.fecha)
+        self.listaFechas=listaFechas
         #uso de la clase rutaCarpetas
         self.mapa=mapa
         self.archivosCreados=mapa.revisar_archivos_en_carpeta
 
     @property
     def dummy_archivos(self)->list:
-        return [f"{mapa.nombreSerie}_{i}" for i in self.listaFechas]       
+        return [f"{self.mapa.nombreSerie}_{i}" for i in self.listaFechas]       
 
     
-    #El vigia va a revisar que los pendientes que hay en la carpeta
+    #El vigia va a revisar los pendientes que hay en la carpeta
     @property    
     def pendientes_de_consulta(self)->list:
-        pendientes=set(self.dummy_archivos)-set(self.mapa.revisar_archivos_en_carpeta)
+        pendientes=set(self.dummy_archivos)-set(self.archivosCreados)
         return list(pendientes)
 
     @property    
@@ -469,11 +243,16 @@ class carajo:
             for j in self.pendientes_de_consulta:
                 if i==j:
                     indices_pendientes.append(k)
+        nuevaTarea=tareaPendiente(rutaArchivoExcel=self.mapa.rutaArchivoExcel,
+                    rutaCarpetaDestino=self.mapa.carpetaDestino,
+                    nombreSerie=self.mapa.nombreSerie,
+                    listaPendientes=indices_pendientes)
+        logger.info(f"Tarea lista para ejecución: {nuevaTarea}")
 
-        return indices_pendientes
+        return nuevaTarea
 
 class boton:
-    def __init__(self,fecha:int,posicion:int,estadoInicial:bool|None=None):
+    def __init__(self,fecha:int,posicion:int)->None:
         self.fecha=fecha
         self.posicion=posicion
         self.estado=False
@@ -485,6 +264,7 @@ class boton:
         self.estado=not self.estado
 
 class coordenadaSimple:
+
     def __init__(self,coordenada:tuple,intervalo:int)->None:
         self.coordenada=coordenada
         self.intervalo=intervalo 
@@ -496,6 +276,7 @@ class coordenadaSimple:
 
 #Esta clase servira para saber si la cordenada dentro del checkbox esta activa o no, y nos porporcionara un boton mental
 class pointCheckboxManager(coordenadaSimple):
+
     def __init__(self,config_visual:dict,radio:Any|None=None)->None:
         self.radio=radio
         self._despachador=config_visual
@@ -518,7 +299,70 @@ class pointCheckboxManager(coordenadaSimple):
         pyautogui.click(self._despachador["obtener"])
         time.sleep(CONFIG_COORDS["tiempo_espera_consulta"])
 
+class ExcelManager:  # PEP 8: PascalCase para clases
+    def __init__(self, ruta_excel: Path) -> None:
+        self.ruta_excel = ruta_excel
+        self.ventana_excel = None
+        self.libro = None  # Cambiado a un solo objeto en lugar de lista
+        self.hwnd = None   # Corregido el typo (hdwn -> hwnd)
 
+    def _abrir_instancia_excel(self) -> None: # No retorna tupla, retorna None
+        self.ventana_excel = win32.Dispatch("Excel.Application")
+        self.hwnd = self.ventana_excel.Hwnd
+        self.ventana_excel.Visible = True
+
+        try:
+            win32gui.ShowWindow(self.hwnd, win32con.SW_MAXIMIZE)
+            win32gui.SetForegroundWindow(self.hwnd)
+        except Exception as e:
+            logger.error(f"Error forzando el foco de la ventana: {e}")
+            raise
+        logger.info("Ventana de Excel abierta y traída al frente")
+
+    def traer_libro_al_frente(self) -> None:
+        if self.libro is not None:
+            try:
+                self.libro.Activate()
+            except Exception as e:
+                logger.error(f"Error al traer el libro al frente: {e}")
+
+    def abrir_libro(self, ruta_archivo: Path) -> None:
+        logger.info(f"Abriendo archivo Excel {ruta_archivo.stem}")
+        
+        # Validamos que el archivo físico exista
+        if not ruta_archivo.exists():
+            logger.error(f"El archivo {ruta_archivo} no existe.")
+            raise FileNotFoundError(f"Archivo no encontrado: {ruta_archivo}")
+
+        # Si NO hay ventana abierta, la abrimos. Si ya hay, nos saltamos este paso.
+        if self.ventana_excel is None:
+            self._abrir_instancia_excel()
+        else:
+            logger.info("Usando instancia de Excel ya existente.")
+
+        # Abrimos el libro y lo guardamos en self.libro (Recordar usar str() en la ruta)
+        self.libro = self.ventana_excel.Workbooks.Open(str(ruta_archivo))
+
+    def cerrar_libro_excel(self, ruta_para_guardar: Path | None = None) -> None:
+        if self.ventana_excel is None or self.libro is None:
+            logger.info("No hay libro o ventana abierta para cerrar.")
+            return
+
+        try:
+            self.ventana_excel.DisplayAlerts = False
+            
+            if ruta_para_guardar:
+                # Recordar convertir Path a str() para el motor de Excel
+                self.libro.SaveAs(str(ruta_para_guardar.resolve()))
+                
+            self.libro.Close(SaveChanges=False)
+            logger.info("Libro cerrado correctamente.")
+            
+        except Exception as e:
+            logger.error(f"Error en el método SaveAs/Close: {e}")
+        finally:
+            self.ventana_excel.DisplayAlerts = True
+            self.libro = None # Limpiamos la variable para el próximo libro
 
 
 class automataConsultas:
@@ -528,7 +372,7 @@ class automataConsultas:
         self.hdwm_excel=ventanaExcel.Hwnd
         self.observador=obervador
         #iniciamos la matriz de fechas que hay dentro del archivo excel que se esta consultando
-        self.matrizFechas=observador.listaFechas
+        self.matrizFechas=self.observador.listaFechas
         #con las fechas creamos botones con todos inicializados en falso, osea desmarcados y solo el primero queda marcado tal y como esta el estandar
         #del archivo excel, la fecha mas reciente esta marcada y consultada
         self.matrizBotones:dict[int,boton]={}
@@ -562,7 +406,6 @@ class automataConsultas:
             x=boton(fechas,k)
             self.matrizBotones[fechas]=x
         
-
     def avanzar_a_fecha(self,pasos:int,freno:int|None=None)->None:
 
         if pasos == 0:
@@ -584,7 +427,6 @@ class automataConsultas:
             self._navegante.click_en_coordenada()
 
         self.avanzar_a_fecha(pasos-avance,freno)
-
     
     def ir_apagar_boton(self,boton:boton):
 
@@ -592,7 +434,6 @@ class automataConsultas:
             self.avanzar_a_fecha(boton.posicion-self._propiocepcion)
             self._navegante.click_en_coordenada(boton)
         
-
     def ir_apagar_todos_los_botones_encendidos(self)->None:
         for boton in self.matrizBotones.values():
             if boton.estado:
@@ -641,16 +482,7 @@ class automataConsultas:
         except IndexError as e:
             print(f"IndexError en obtener fecha actual, probablemente la propiocepcion se salio de rango No es un error critico continua {e}")
             return False
-
-
-    @property
-    def listadefechas(self)->None:
-        print("lista de fechas del observador",self.observador.listaFechas)    
-        return None
-    @property
-    def limpiar(self)->None:
-        print("lista de fechas del observador",self.observador.listaFechas)    
-        return None
+        
 
     def recorrer_pendientes(self,lisapendientes:list)->None:
         print(self.matrizFechas)
@@ -756,43 +588,37 @@ class automataConsultas:
 
         print("Proceso de consultas finalizado")
 
-class excelOpenManager:
-
-    def __init__(self,ruta):
-        self.ventana=win32.Dispatch("Excel.Application")
-        self.hdwn=self.ventana.Hwnd
-        self.libro
-        pass
-
-
-x=gv.ARCHIVOS_DATA_RAW[3]["ruta"]
-time.sleep(2)   
-casilla1=pointCheckboxManager(CONFIG_COORDS)
-mapa=rutaCarpetas(rutasInstaciadas,x)
-
-libro,ventana,*_=abrir_excel_por_ruta(x)
-
-
-observador=carajo(libro,mapa)
-observador.archivosCreados
-
-hoja1=automataConsultas(casilla1,observador,ventana)
 
 
 
-hoja1.recorrer_pendientes([0])
+# x=gv.ARCHIVOS_DATA_RAW[3]["ruta"]
+# time.sleep(2)   
+# casilla1=pointCheckboxManager(CONFIG_COORDS)
+# mapa=rutaCarpetas(rutasInstaciadas,x)
+
+# libro,ventana,*_=abrir_excel_por_ruta(x)
+
+
+# observador=carajo(libro,mapa)
+# observador.archivosCreados
+
+# hoja1=automataConsultas(casilla1,observador,ventana)
+
+
+
+# hoja1.recorrer_pendientes([0])
 
 
 # print(hoja1.matrizFechas)
 
-#################################### 
-#Implementacion de decoradores
-def mi_primer_decorador(fechaBuscada:str):
+# ################################### 
+# Implementacion de decoradores
+# def mi_primer_decorador(fechaBuscada:str):
 
-    def decorador_real(funcion):
+#     def decorador_real(funcion):
 
-            def envoltura(*args, **kwargs):
-                pass
+#             def envoltura(*args, **kwargs):
+#                 pass
 
 
 
