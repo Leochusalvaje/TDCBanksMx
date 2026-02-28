@@ -299,51 +299,60 @@ class pointCheckboxManager(coordenadaSimple):
         pyautogui.click(self._despachador["obtener"])
         time.sleep(CONFIG_COORDS["tiempo_espera_consulta"])
 
-class ExcelManager:  # PEP 8: PascalCase para clases
-    def __init__(self, ruta_excel: Path) -> None:
-        self.ruta_excel = ruta_excel
+class ExcelManager: 
+    def __init__(self) -> None:
+        
         self.ventana_excel = None
-        self.libro = None  # Cambiado a un solo objeto en lugar de lista
-        self.hwnd = None   # Corregido el typo (hdwn -> hwnd)
+        self.libro:dict[str,Any] ={}
+        self.hwnd = None   
 
-    def _abrir_instancia_excel(self) -> None: # No retorna tupla, retorna None
-        self.ventana_excel = win32.Dispatch("Excel.Application")
-        self.hwnd = self.ventana_excel.Hwnd
-        self.ventana_excel.Visible = True
-
+    def traer_instancia_excel_al_frente(self)-> None:
+        if self.ventana_excel is None:
+            logger.warning("Se intenta traer una ventana de excel que no esta instanciada, se invocara el metodo \"_abrir_instancia_excel\"")
+            self._abrir_instancia_excel()
         try:
+            self.ventana_excel.Visible = True
             win32gui.ShowWindow(self.hwnd, win32con.SW_MAXIMIZE)
             win32gui.SetForegroundWindow(self.hwnd)
+            logger.info("Ventana de Excel abierta y traída al frente")
         except Exception as e:
-            logger.error(f"Error forzando el foco de la ventana: {e}")
+            logger.error(f"Error forzando traer ventana al frente: {e}")
             raise
-        logger.info("Ventana de Excel abierta y traída al frente")
 
-    def traer_libro_al_frente(self) -> None:
+    def _abrir_instancia_excel(self) -> None:
+        try:
+            self.ventana_excel = win32.Dispatch("Excel.Application")
+            self.hwnd = self.ventana_excel.Hwnd
+
+        except Exception as e:
+            logger.critical(f"Error al abrir instancia de excel validar permisos o conflictos con la libreria win32.client: {e}")
+            raise
+
+
+    def traer_libro_al_frente(self,nombre_libro_para_manipular) -> None:
         if self.libro is not None:
             try:
-                self.libro.Activate()
+                self.libro[nombre_libro_para_manipular].Activate()
             except Exception as e:
                 logger.error(f"Error al traer el libro al frente: {e}")
 
-    def abrir_libro(self, ruta_archivo: Path) -> None:
+    def abrir_libro(self, nombre_libro_para_manipular, ruta_archivo: Path) -> None:
         logger.info(f"Abriendo archivo Excel {ruta_archivo.stem}")
         
-        # Validamos que el archivo físico exista
+    
         if not ruta_archivo.exists():
             logger.error(f"El archivo {ruta_archivo} no existe.")
             raise FileNotFoundError(f"Archivo no encontrado: {ruta_archivo}")
 
-        # Si NO hay ventana abierta, la abrimos. Si ya hay, nos saltamos este paso.
-        if self.ventana_excel is None:
+
+        elif self.ventana_excel is None:
             self._abrir_instancia_excel()
-        else:
-            logger.info("Usando instancia de Excel ya existente.")
 
-        # Abrimos el libro y lo guardamos en self.libro (Recordar usar str() en la ruta)
-        self.libro = self.ventana_excel.Workbooks.Open(str(ruta_archivo))
 
-    def cerrar_libro_excel(self, ruta_para_guardar: Path | None = None) -> None:
+        nuevo_libro=self.ventana_excel.Workbooks.Open(str(ruta_archivo))
+        self.libro[nombre_libro_para_manipular]=nuevo_libro
+
+    def cerrar_libro_excel(self,nombre_libro_para_manipular, ruta_para_guardar: Path | None = None) -> None:
         if self.ventana_excel is None or self.libro is None:
             logger.info("No hay libro o ventana abierta para cerrar.")
             return
@@ -353,18 +362,31 @@ class ExcelManager:  # PEP 8: PascalCase para clases
             
             if ruta_para_guardar:
                 # Recordar convertir Path a str() para el motor de Excel
-                self.libro.SaveAs(str(ruta_para_guardar.resolve()))
+                self.libro[nombre_libro_para_manipular].SaveAs(str(ruta_para_guardar.resolve()))
                 
-            self.libro.Close(SaveChanges=False)
+            self.libro[nombre_libro_para_manipular].Close(SaveChanges=False)
+            del self.libro[nombre_libro_para_manipular]
+
             logger.info("Libro cerrado correctamente.")
             
         except Exception as e:
             logger.error(f"Error en el método SaveAs/Close: {e}")
         finally:
             self.ventana_excel.DisplayAlerts = True
-            self.libro = None # Limpiamos la variable para el próximo libro
 
+    def funcion_eureka_buscar_rango(self,nombre_libro_para_manipular):
+        primerhoja=self.libro[nombre_libro_para_manipular].Sheets(1)
+        primerhoja.Activate()
+        
+        if not primerhoja.Range("B1").End(-4121).Value=="Notas":
+            raise Exception("\nCambio el formato de la CNBV actualizar saltos de linea y espaciados de nuevo para encontrar la tabla, se debe modificar los pasos de la libreria win32com.client.")
 
+        celda_vigia=primerhoja.Range("B1").End(-4121).End(-4121)        
+class libroExlelManager:
+    def __init__(self):
+
+        pass
+    pass
 class automataConsultas:
     def __init__(self,punto_actual:pointCheckboxManager,obervador:carajo,ventanaExcel:Any)->None:
         #Esta es una ventana y un objeto para manipualr el excel posterior a esto si obtendremos el handle
