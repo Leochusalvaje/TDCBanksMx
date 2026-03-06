@@ -137,11 +137,11 @@ class RegexpPatrones:
     def revisar_patron(self,patron:str,cadena:str)->str:
         try:
             if not re.match(patron,cadena):
-
+                logger.error(f"El string '{cadena}' no cumple con el patrón '{patron}'")
                 raise ValueError("Patrón invalido")
-            logger.debug("Patrón de fecha válido, se puede proceder")
+
         except ValueError as e:
-            logger.critical(f"Error en el patrn de la fecha {cadena}: {e}")
+            logger.critical(f"Error al revisar el patron {patron} para el string {cadena}: {e}")
             return None
         return cadena
     

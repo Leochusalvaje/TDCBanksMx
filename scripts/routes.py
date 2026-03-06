@@ -11,6 +11,7 @@ RUTA_DATA = RUTA_BASE  / "Data"
 RUTAS_DATA_TDC=RUTA_DATA/"datosTarjetasCredito"
 RUTA_OUTPUT = RUTA_BASE / "Output"
 RUTA_DATASET=RUTA_BASE/"Datasets"
+RUTA_LIBRO_CONTROL=RUTA_OUTPUT/ "LibroControl.xlsx"
 # ruta.is_file() comprueba que sea un archivo (no carpeta).
 # ruta.suffix devuelve la extensión, que comparamos con ['.xlsx', '.xls'].
 # iterdir() recorre todos los elementos dentro de la carpeta.

@@ -1,1 +1,1 @@
-abrir_excel_por_ruta
+                libro_instancia.SaveAs(str(ruta_para_guardar.resolve()))
