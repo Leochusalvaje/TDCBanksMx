@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 import logging
 import json
+from enum import Enum
 
 logger=logging.getLogger(__name__)
 
@@ -33,11 +34,14 @@ class ConfigManager:
                 logger.critical(f"ERROR INESPERADO al abrir {self.rutaJson}: {e}")
                 raise SystemExit(1) from None
     @property
-    def cargarRutaBase(self):
+    def cargar_ruta_base(self):
         return Path(self.datos.get("ruta_base"))
     @property
-    def cargarBimestreFinal(self):
+    def cargar_bimestre_final(self):
         return self.datos.get("bimestre_final")
+    @property
+    def cargar_patrones(self):
+        return self.datos.get("patrones")
 
 class DescripcionArchivosCriticos:
     def __init__(self):
@@ -128,36 +132,55 @@ class Paths:
             else:
                 logger.info(f"Archivo crítico encontrado en: {self.rutaParaLogger(archivo)}")
 
+class TipoPatron(Enum):
+    fecha = "fecha"
+    archivo_cnbv = "archivo_cnbv"
         
-class RegexpPatrones: 
-    def __init__(self):
-        self.FECHAS=r"^20\d{2}(0[1-9]|1[0-2])$"
-        self.ARCHIVOSCNBV=r"^[^_]+_[^_]+_([^_]+)"
-    # Metodo para revisar patrones
-    def revisar_patron(self,patron:str,cadena:str)->str:
-        try:
-            if not re.match(patron,cadena):
-                logger.error(f"El string '{cadena}' no cumple con el patrón '{patron}'")
-                raise ValueError("Patrón invalido")
+class RegexpPatrones:
 
-        except ValueError as e:
-            logger.critical(f"Error al revisar el patron {patron} para el string {cadena}: {e}")
+
+    def __init__(self,patrones:dict):
+        if not patrones:
+            logger.error("Se debe pasar un diccionario de patrones")
+            raise ValueError("Se debe pasar un diccionario de patrones")
+
+        # Validar claves contra Enum
+        enum_values={e.value for e in TipoPatron}
+        for clave in patrones:
+            if clave not in enum_values:
+                logger.error(f"Patrón desconocido: {clave}, anexarlo en la clase TipoPatron")
+                raise ValueError(f"Patrón desconocido: {clave}")
+
+        # Compilar regex y guardar en diccionario
+        self._patrones={
+            TipoPatron(clave): re.compile(regex) for clave, regex in patrones.items()
+        }
+
+    @property
+    def cargar_patrones(self):
+
+        return self._patrones
+
+    def revisar_patron(self,tipo:TipoPatron,cadena:str)->str|None:
+
+        patron = self._patrones[tipo]
+        if not patron.match(cadena):
+            logger.error(f"El string '{cadena}' no cumple con el patrón '{tipo.name}'")
             return None
         return cadena
-    
-    def busqueda_patron_para_nombrar_carpetas(self,cadena:str)-> str:
-            # Explicación del patrón:
-        # ^[^_]+  -> Salta el primer bloque (040)
-        # _[^_]+  -> Salta el segundo bloque (12e)
-        # _([^_]+) -> Captura lo que hay en el tercer bloque hasta el siguiente guion bajo
-        patron = self.ARCHIVOSCNBV
 
-        resultado = re.search(patron, cadena)
+    def busqueda_patron_para_nombrar_carpetas(self,cadena:str)->str|None:
+
+        patron = self._patrones[TipoPatron.archivo_cnbv]
+        resultado = patron.search(cadena)
 
         if resultado:
             serie_nombre = resultado.group()
-            logger.info(f"Serie extraída: {serie_nombre}") 
-        return serie_nombre
+            logger.info(f"Serie extraída: {serie_nombre}")
+            return serie_nombre
+
+        logger.warning(f"No se encontró patrón en la cadena: {cadena}")
+        return None
 
 
 patron=RegexpPatrones()

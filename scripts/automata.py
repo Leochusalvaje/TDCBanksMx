@@ -36,8 +36,9 @@ import pywintypes as wty
 import re
 from typing import Any,TYPE_CHECKING
 from config import RegexpPatrones
+from enum import Enum
 if TYPE_CHECKING:
-    from config import Paths,DescripcionArchivosCriticos,RegexpPatrones
+    from config import Paths,DescripcionArchivosCriticos,RegexpPatrones,ConfigManager
 
 pyautogui.FAILSAFE = True
 
@@ -349,7 +350,7 @@ class libroExcelManager:
             logger.debug("Formato alternativo detectado")
             
 
-        if not self.patronValidador.revisar_patron(self.patronValidador.FECHAS,str_fecha):
+        if not self.patronValidador.revisar_patron(self.patronValidador.fechas,str_fecha):
             raise Exception("\nEl valor para buscar la fecha y nombrar las carpetas no se cumple. Validar la celda de donde se esta extrayendo la fecha.")
         logger.debug("Patrón de fecha válido, se puede proceder")
 
@@ -357,7 +358,7 @@ class libroExcelManager:
 
 
 class ExcelManager: 
-    def __init__(self,patron_validador:RegexpPatrones) -> None:
+    def __init__(self,patron_validador:RegexpPatrones,config) -> None:
         self.patron_validador=patron_validador
         self.ventana_excel = None
         self.hwnd = None  

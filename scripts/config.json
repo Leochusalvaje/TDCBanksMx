@@ -14,5 +14,9 @@
     "tiempos_espera": {
         "consulta": 1,
         "entre_clicks": 0.3
+    },
+    "patrones": {
+        "fecha": "^20\\d{2}(0[1-9]|1[0-2])$",
+        "archivo_cnbv": "^[^_]+_[^_]+_([^_]+)"
     }
 }
