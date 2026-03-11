@@ -18,5 +18,18 @@
     "patrones": {
         "fecha": "^20\\d{2}(0[1-9]|1[0-2])$",
         "archivo_cnbv": "^[^_]+_[^_]+_([^_]+)"
+    },
+    "coordenadas": {
+        "abajo": [362, 425],
+        "arriba": [362, 388],
+        "bancos": [393, 363],
+        "obtener": [76, 409],
+        "fecha_top": [155, 387],
+        "fecha_bottom": [155, 423],
+        "penultima": [156, 404]
+    },
+    "tiempos": {
+        "tiempo_espera_consulta": 1,
+        "tiempo_espera_entre_clicks": 0.3
     }
 }

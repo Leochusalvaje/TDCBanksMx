@@ -1,1 +1,0 @@
-                libro_instancia.SaveAs(str(ruta_para_guardar.resolve()))

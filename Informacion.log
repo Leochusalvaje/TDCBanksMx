@@ -1,16 +1,49 @@
-2026-02-25 23:05:38,491 - [Orquestador] - INFO - --- Iniciando validación de rutas ---
-2026-02-25 23:05:38,493 - [config] - INFO - Asegurando directorio: TDCBanksMx
-2026-02-25 23:05:38,494 - [config] - INFO - Asegurando directorio: TDCBanksMx\Data
-2026-02-25 23:05:38,494 - [config] - INFO - Asegurando directorio: TDCBanksMx\Data\datosTarjetasCredito
-2026-02-25 23:05:38,494 - [config] - INFO - Asegurando directorio: TDCBanksMx\Output
-2026-02-25 23:05:38,495 - [config] - INFO - Asegurando directorio: TDCBanksMx\Datasets
-2026-02-25 23:05:38,495 - [config] - INFO - Asegurando directorio: TDCBanksMx\scripts
-2026-02-25 23:05:38,496 - [config] - INFO - Archivo crítico encontrado en: TDCBanksMx\scripts\config.json
-2026-02-25 23:05:38,496 - [config] - INFO - Archivo crítico encontrado en: TDCBanksMx\Output\LibroControl.xlsx
-2026-02-25 23:05:38,496 - [Automata] - INFO - Bimestres contenidos en cada archivo excel de la CNBV: 85 Este parametro es crucial y se genera con los parametros del config.json ingresados por el USUARIO humano para el funcionamiento del automata, si no se esta extrayendo la cantidad correcta de bimestres revisar que las fechas de entrada sean correctas y que se este cumpliendo el patron establecido en la clase RegexpPatrones
-2026-02-25 23:05:38,497 - [Orquestador] - INFO - Procesando archivo: 040_12d_R1_Número de tarjetas de crédito por institución.xls
-2026-02-25 23:05:38,981 - [config] - INFO - Serie extraída: 040_12d_R1
-2026-02-25 23:05:39,486 - [Automata] - INFO - Tarea pendiente creada en objeto para consumo del automata: Serie: 040_12d_R1 | Archivo: 040_12d_R1_Número de tarjetas de crédito por institución.xls | Pendientes: 85
-2026-02-25 23:05:40,405 - [Orquestador] - INFO - Procesando archivo: 040_12d_R2_Saldo de tarjetas de crédito por institución.xls
-2026-02-25 23:05:40,759 - [config] - INFO - Serie extraída: 040_12d_R2
-2026-02-25 23:05:41,133 - [Automata] - INFO - Tarea pendiente creada en objeto para consumo del automata: Serie: 040_12d_R2 | Archivo: 040_12d_R2_Saldo de tarjetas de crédito por institución.xls | Pendientes: 85
+2026-03-08 16:22:34,454 - [main] - INFO - --- Iniciando validación de rutas ---
+2026-03-08 16:22:34,456 - [config] - INFO - Asegurando directorio: TDCBanksMx
+2026-03-08 16:22:34,457 - [config] - INFO - Asegurando directorio: TDCBanksMx\Data
+2026-03-08 16:22:34,457 - [config] - INFO - Asegurando directorio: TDCBanksMx\Data\datosTarjetasCredito
+2026-03-08 16:22:34,457 - [config] - INFO - Asegurando directorio: TDCBanksMx\Output
+2026-03-08 16:22:34,458 - [config] - INFO - Asegurando directorio: TDCBanksMx\Datasets
+2026-03-08 16:22:34,458 - [config] - INFO - Asegurando directorio: TDCBanksMx\scripts
+2026-03-08 16:22:34,458 - [config] - INFO - Archivo crítico encontrado en: TDCBanksMx\scripts\config.json
+2026-03-08 16:22:34,459 - [config] - INFO - Archivo crítico encontrado en: TDCBanksMx\Output\LibroControl.xlsx
+2026-03-08 16:22:34,467 - [Orquestador] - INFO - Analizando archivo: 040_12d_R1_Número de tarjetas de crédito por institución.xls
+2026-03-08 16:22:36,742 - [config] - INFO - Serie extraída: 040_12d_R1
+2026-03-08 16:22:41,247 - [Orquestador] - INFO - Analizando archivo: 040_12d_R2_Saldo de tarjetas de crédito por institución.xls
+2026-03-08 16:22:41,807 - [config] - INFO - Serie extraída: 040_12d_R2
+2026-03-08 16:22:43,111 - [Orquestador] - INFO - Analizando archivo: 040_12e_R10_Distribución de tarjetas por probabilidad de incumplimiento.xls
+2026-03-08 16:22:43,511 - [config] - INFO - Serie extraída: 040_12e_R10
+2026-03-08 16:22:44,655 - [Orquestador] - INFO - Analizando archivo: 040_12e_R11_Distribución de tarjetas por impagos consecutivos.xls
+2026-03-08 16:22:45,039 - [config] - INFO - Serie extraída: 040_12e_R11
+2026-03-08 16:22:46,007 - [Orquestador] - INFO - Analizando archivo: 040_12e_R1_Distribución de tarjetas por límite de crédito.xls
+2026-03-08 16:22:46,399 - [config] - INFO - Serie extraída: 040_12e_R1
+2026-03-08 16:22:47,366 - [Orquestador] - INFO - Analizando archivo: 040_12e_R2_Distribución de tarjetas por porcentaje de uso de línea.xls
+2026-03-08 16:22:48,039 - [config] - INFO - Serie extraída: 040_12e_R2
+2026-03-08 16:22:48,041 - [Orquestador] - INFO - Analizando archivo: 040_12e_R3_Distribución de tarjetas por porcentaje de pago mínimo exigido con respecto al saldo a pagar.xls
+2026-03-08 16:22:48,486 - [config] - INFO - Serie extraída: 040_12e_R3
+2026-03-08 16:22:48,488 - [Orquestador] - INFO - Analizando archivo: 040_12e_R4_Distribución de tarjetas por porcentaje de pago realizado con respecto al saldo a pagar.xls
+2026-03-08 16:22:49,014 - [config] - INFO - Serie extraída: 040_12e_R4
+2026-03-08 16:22:49,016 - [Orquestador] - INFO - Analizando archivo: 040_12e_R50_Distribución de tarjetas por porcentaje de pago mínimo respecto a la línea de crédito.xls
+2026-03-08 16:22:49,415 - [config] - INFO - Serie extraída: 040_12e_R50
+2026-03-08 16:22:49,417 - [Orquestador] - INFO - Analizando archivo: 040_12e_R5_Distribución de tarjetas por porcentaje de pago realizado vs pago mínimo exigido.xls
+2026-03-08 16:22:49,878 - [config] - INFO - Serie extraída: 040_12e_R5
+2026-03-08 16:22:49,880 - [Orquestador] - INFO - Analizando archivo: 040_12e_R6_ConsumoRevolvente_Tarjetas_Pagominimo_vs_pagoRealizado.xls
+2026-03-08 16:22:51,022 - [config] - INFO - Serie extraída: 040_12e_R6
+2026-03-08 16:22:51,024 - [Orquestador] - INFO - Analizando archivo: 040_12e_R7_Consumo Revolvente Distribución de tarjetas por porcentaje de pago realizado vs pago para no generar intereses.xls
+2026-03-08 16:22:52,678 - [config] - INFO - Serie extraída: 040_12e_R7
+2026-03-08 16:22:52,680 - [Orquestador] - INFO - Analizando archivo: 040_12e_R8_Consumo Revolvente Distribución por meses desde apertura.xls
+2026-03-08 16:22:53,063 - [config] - INFO - Serie extraída: 040_12e_R8
+2026-03-08 16:22:53,064 - [Orquestador] - INFO - Analizando archivo: 040_12e_R9_Consumo Revolvente Distribución de tarjetas por pérdida esperada.xls
+2026-03-08 16:22:53,550 - [config] - INFO - Serie extraída: 040_12e_R9
+2026-03-08 16:22:53,553 - [Orquestador] - INFO - Analizando archivo: 040_12h_R1_Tasas de interés por pérdida esperada.xls
+2026-03-08 16:22:58,030 - [config] - INFO - Serie extraída: 040_12h_R1
+2026-03-08 16:22:58,033 - [Orquestador] - INFO - Analizando archivo: 040_12h_R2_Porcentaje de uso de línea por pérdida esperada.xls
+2026-03-08 16:22:58,998 - [config] - INFO - Serie extraída: 040_12h_R2
+2026-03-08 16:22:59,000 - [Orquestador] - INFO - Analizando archivo: 040_12h_R3_Porcentaje de pago mínimo entre saldo a pagar por pérdida esperada.xls
+2026-03-08 16:22:59,630 - [config] - INFO - Serie extraída: 040_12h_R3
+2026-03-08 16:22:59,632 - [Orquestador] - INFO - Analizando archivo: 040_12h_R5_Porcentaje de pago realizado entre pago mínimo por pérdida esperada.xls
+2026-03-08 16:23:00,094 - [config] - INFO - Serie extraída: 040_12h_R5
+2026-03-08 16:23:00,096 - [Orquestador] - INFO - Analizando archivo: 040_12h_R8_Impagos consecutivos por pérdida esperada.xls
+2026-03-08 16:23:00,550 - [config] - INFO - Serie extraída: 040_12h_R8
+2026-03-08 16:23:00,552 - [Orquestador] - INFO - Analizando archivo: 040_12h_R9_Meses transcurridos desde la apertura por pérdida esperada.xls
+2026-03-08 16:23:01,006 - [config] - INFO - Serie extraída: 040_12h_R9

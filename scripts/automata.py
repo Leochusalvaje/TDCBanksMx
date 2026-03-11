@@ -35,7 +35,7 @@ from pathlib import Path
 import pywintypes as wty
 import re
 from typing import Any,TYPE_CHECKING
-from config import RegexpPatrones
+from config import RegexpPatrones, TipoPatron
 from enum import Enum
 if TYPE_CHECKING:
     from config import Paths,DescripcionArchivosCriticos,RegexpPatrones,ConfigManager
@@ -45,7 +45,7 @@ pyautogui.FAILSAFE = True
 
 CONFIG_COORDS = {
     "abajo": (362, 425),
-    "arriba": (362, 388),
+    "arriba": (362, 388), 
     "bancos": (393, 363),
     "obtener": (76, 409), 
     "fecha_top": (155, 387),
@@ -156,7 +156,7 @@ def string_eureka_fechas(libro:Any,patronValidador:RegexpPatrones)->tuple:
 
 def lista_verdad(bimestreInicial:str,bimestreFinal,patronValidador:RegexpPatrones)->list:
     
-    fecha=patronValidador.revisar_patron(patronValidador.FECHAS,bimestreFinal)
+    fecha=patronValidador.revisar_patron(TipoPatron.FECHA,bimestreFinal)
 
     try:
         yearbase=int(bimestreInicial[:4])
@@ -193,11 +193,11 @@ def lista_verdad(bimestreInicial:str,bimestreFinal,patronValidador:RegexpPatrone
     return y
 
 class rutaCarpetas:
-    def __init__(self,rutaCarpetaOutput:Path,archivoExcel:Path,patronvalidador:RegexpPatrones)->None:
-        self.rutaArchivoExcel=archivoExcel
-        self.nombreArchivExcel=archivoExcel.stem
+    def __init__(self,ruta_carpeta_output:Path,archivo_excel:Path,patronvalidador:RegexpPatrones)->None:
+        self.rutaArchivoExcel=archivo_excel
+        self.nombreArchivExcel=archivo_excel.stem
         self.nombreSerie=patronvalidador.busqueda_patron_para_nombrar_carpetas(self.nombreArchivExcel)
-        self.carpetaDestino=rutaCarpetaOutput / self.nombreSerie
+        self.carpetaDestino=ruta_carpeta_output / self.nombreSerie
         self.carpetaDestino.mkdir(parents=True, exist_ok=True)
     
     @property
@@ -258,54 +258,11 @@ class carajo:
 
         return nuevaTarea
 #Esta clase servira para saber si la cordenada dentro del checkbox esta activa o no, y nos porporcionara un boton mental
-class boton:
-    def __init__(self,fecha:int,posicion:int)->None:
-        self.fecha=fecha
-        self.posicion=posicion
-        self.estado=False
-    @property
-    def estado_actual(self)->bool:
-        return self.estado
-    
-    def cambiar_estado(self)->None:
-        self.estado=not self.estado
-
-class coordenadaSimple:
-
-    def __init__(self,coordenada:tuple,intervalo:int)->None:
-        self.coordenada=coordenada
-        self.intervalo=intervalo 
-
-    def click_en_coordenada(self,boton:boton|None=None)->None:
-        pyautogui.click(self.coordenada,interval=self.intervalo)
-        if boton:
-            boton.cambiar_estado()
 
 
-class pointCheckboxManager(coordenadaSimple):
-
-    def __init__(self,config_visual:dict,radio:Any|None=None)->None:
-        self.radio=radio
-        self._despachador=config_visual
-
-        super().__init__(self._despachador["fecha_top"],self._despachador["tiempo_espera_entre_clicks"])
-        
-    def click_auxiliar_en_coordenada(self,punto:tuple)->None:
-        pyautogui.click(punto,interval=self._despachador["tiempo_espera_entre_clicks"])
-        time.sleep(CONFIG_COORDS["tiempo_espera_consulta"])   
-
-    def siguiente_cordenada(self,pasos:int):
-        pyautogui.click(self._despachador["abajo"],clicks=abs(pasos),interval=self._despachador["tiempo_espera_entre_clicks"])
-        self.radio._propiocepcion+=pasos
-
-    def  anterior_cordenada(self,pasos:int):
-        pyautogui.click(self._despachador["arriba"],clicks=abs(pasos),interval=self._despachador["tiempo_espera_entre_clicks"])
-        self.radio._propiocepcion-=pasos
-
-    def obtener(self,casoparticular:bool=False)->bool:
-        pyautogui.click(self._despachador["obtener"])
-        time.sleep(CONFIG_COORDS["tiempo_espera_consulta"])
-
+class TipoLibro(Enum):
+    LIBRO_CONTROL ="libro_control"
+    LIBRO_CONSULTA ="libro_consulta"
 
 class libroExcelManager:
     def __init__(self,libro:Any,patronValidador:RegexpPatrones,posicion_hoja_excel:int=1) -> None:
@@ -350,7 +307,7 @@ class libroExcelManager:
             logger.debug("Formato alternativo detectado")
             
 
-        if not self.patronValidador.revisar_patron(self.patronValidador.fechas,str_fecha):
+        if not self.patronValidador.revisar_patron(TipoPatron.FECHA,str_fecha):
             raise Exception("\nEl valor para buscar la fecha y nombrar las carpetas no se cumple. Validar la celda de donde se esta extrayendo la fecha.")
         logger.debug("Patrón de fecha válido, se puede proceder")
 
@@ -358,11 +315,22 @@ class libroExcelManager:
 
 
 class ExcelManager: 
-    def __init__(self,patron_validador:RegexpPatrones,config) -> None:
+    def __init__(self,patron_validador:RegexpPatrones,libro_control_ruta:Path) -> None:
         self.patron_validador=patron_validador
+        self.libro_control_ruta=libro_control_ruta
         self.ventana_excel = None
         self.hwnd = None  
-        self.libro:dict[str,libroExcelManager]={} 
+        self.libro:dict[TipoLibro,libroExcelManager]={} 
+
+
+
+    def _abrir_instancia_excel(self) -> None:
+        try:
+            self.ventana_excel = win32.Dispatch("Excel.Application")
+            self.hwnd = self.ventana_excel.Hwnd
+        except Exception as e:
+            logger.critical(f"Error al abrir instancia de excel validar permisos o conflictos con la libreria win32.client: {e}")
+            raise
 
     def traer_instancia_excel_al_frente(self)-> None:
         if self.hwnd is None:
@@ -375,47 +343,45 @@ class ExcelManager:
             logger.info("Ventana de Excel abierta y traída al frente")
         except Exception as e:
             logger.error(f"Error forzando traer ventana al frente: {e}")
-            raise
+            raise        
 
-    def _abrir_instancia_excel(self) -> None:
-        try:
-            self.ventana_excel = win32.Dispatch("Excel.Application")
-            self.hwnd = self.ventana_excel.Hwnd
-        except Exception as e:
-            logger.critical(f"Error al abrir instancia de excel validar permisos o conflictos con la libreria win32.client: {e}")
-            raise
-
-    def traer_libro_al_frente(self,nombre_libro_para_manipular) -> None:
+    def traer_libro_al_frente(self,tipo_libro:TipoLibro) -> None:
         if self.libro is not None:
             try:
-                self.libro[nombre_libro_para_manipular].Activate()
-                logger.info(f"Libro {nombre_libro_para_manipular} traído al frente")
+                self.libro[tipo_libro].Activate()
+                logger.info(f"Libro {tipo_libro} traído al frente")
             except Exception as e:
                 logger.error(f"Error al traer el libro al frente: {e}")
             
 
-    def abrir_libro(self, nombre_libro_para_manipular, ruta_archivo: Path) -> None:
+    def abrir_libro(self, tipo_libro:TipoLibro, ruta_archivo: Path) -> None:
         logger.info(f"Abriendo archivo Excel {ruta_archivo.stem}")
         
         if not ruta_archivo.exists():
             logger.error(f"El archivo {ruta_archivo} no existe.")
             raise FileNotFoundError(f"Archivo no encontrado: {ruta_archivo}")
 
-        elif self.ventana_excel is None:
+        if self.ventana_excel is None:
             self._abrir_instancia_excel()
-
-        nuevo_libro=self.ventana_excel.Workbooks.Open(str(ruta_archivo))
-
-        self.libro[nombre_libro_para_manipular]=libroExcelManager(nuevo_libro,self.patron_validador)
-
-    def cerrar_libro_excel(self, nombre_libro: str, ruta_guardar: Path | None = None) -> None:
         
-        """
-        Cierra un libro específico de Excel manejando la seguridad de macros y alertas.
-        Si se proporciona ruta_guardar, realiza un SaveAs antes de cerrar.
-        """
+        if tipo_libro is TipoLibro.LIBRO_CONTROL:
+            nuevo_libro=self.ventana_excel.Woorbooks.Open(str(self.libro_control_ruta))
+            self.libro[tipo_libro]=libroExcelManager(nuevo_libro,self.patron_validador)
+            
+        else:
+            nuevo_libro=self.ventana_excel.Workbooks.Open(str(ruta_archivo))
+            self.libro[tipo_libro]=libroExcelManager(nuevo_libro,self.patron_validador)
+        
+
+
+    def cerrar_libro_excel(self, nombre_libro: TipoLibro, ruta_guardar: Path | None = None) -> None:
+        
+
+        #Cierra un libro específico de Excel manejando la seguridad de macros y alertas.
+        #Si se proporciona ruta_guardar, realiza un SaveAs antes de cerrar.
+
         if not self.ventana_excel or not self.libro:
-            logger.info("No hay sesión de Excel activa para cerrar.")
+            logger.info("No hay sesión de Excel activa para cerrar.") 
             return
 
         try:
@@ -442,7 +408,7 @@ class ExcelManager:
             del self.libro[nombre_libro]
 
         except Exception as e:
-            logger.error(f"Fallo al cerrar/guardar el libro '{nombre_libro}': {e}")
+            logger.error(f"Fallo al cerrar/guardar el libro '{nombre_libro.name}': {e}")
         
         finally:
             # Restaurar estado de la aplicación siempre
@@ -450,20 +416,116 @@ class ExcelManager:
                 self.ventana_excel.EnableEvents = True
                 self.ventana_excel.DisplayAlerts = True
 
-    def extraer_tabla_y_guardar_en_ruta(self,libro_front_end:str,ruta_destino:Path,libro_control_ruta:Path):
-        self.abrir_libro("libro_control",libro_control_ruta)
-        libro_control=self.libro["libro_control"]
-        libro_consultas=self.libro[libro_front_end]
+    def extraer_tabla_y_guardar_en_ruta(self,ruta_destino:Path,libro_control_ruta:Path):
+        libro_c=TipoLibro.LIBRO_CONTROL
+        #abrimos y ponemos el libro de extraccion en una varible 
+        self.abrir_libro(libro_c,libro_control_ruta)
+        libro_control=self.libro[libro_c]
+
+        try:
+            libro_consultas=self.libro[TipoLibro.LIBRO_CONSULTA]
+        except KeyError:
+            logger.critical("No se ha abierto el libro de consulta, no se puede extraer la tabla. Asegurar que se ha abierto correctamente con el metodo \"abrir_libro\" y que se esta pasando la ruta correcta del libro de consulta.")
+            raise
 
         tabla=libro_consultas.funcion_eureka_buscar_tabla
         filas=len(tabla)
         columnas=len(tabla[0])
+        
         hoja=libro_control.hoja_Excel
         celdas_destino=hoja.Range(hoja.Cells(1, 1),hoja.Cells(filas, columnas))
         celdas_destino.Value=tabla
-        self.cerrar_libro_excel("libro_control",ruta_destino)
+        self.cerrar_libro_excel(TipoLibro.LIBRO_CONTROL, ruta_destino)
+"""
+Esta clases se hizo para resolver el problema de que el automata no tiene forma de saber si una cordenada dentro del checkbox
+esta activa o no, con esta clase se puede simular un boton mental que cambia su estado cada vez que se hace click en la cordenada del checkbox,
+de esta forma el automata puede saber si la cordenada esta activa o no y tomar decisiones en base a eso.
+"""
+class boton:
+    def __init__(self,fecha:int,posicion:int)->None:
+        self.fecha=fecha
+        self.posicion=posicion
+        self.estado=False
+    @property
+    def estado_actual(self)->bool:
+        return self.estado
+    
+    def cambiar_estado(self)->None:
+        self.estado=not self.estado
+"""
+coordenadaSimple es una clase que usa la libreria pyautogui para hacer click en una coordenada especifica,
+esta clase se hizo para resolver el problema de que el automata no tiene forma de saber si una cordenada dentro
+del checkbox y tarbajar con la coordenada de obtener esta activa o no.
+"""
+class coordenadaSimple:
+
+    def __init__(self,coordenada:tuple,intervalo:int)->None:
+        self.coordenada=coordenada
+        self.intervalo=intervalo 
+
+    def click_en_coordenada(self,boton:boton|None=None)->None:
+        pyautogui.click(self.coordenada,interval=self.intervalo)
+        if boton:
+            boton.cambiar_estado()
+
+@dataclass
+class CheckerCoordenada:
+    abajo: tuple
+    arriba: tuple
+    bancos: tuple
+    obtener: tuple
+    fecha_top: tuple
+    fecha_bottom: tuple
+    penultima: tuple
+
+    def __post_init__(self):
+        self.abajo = tuple(self.abajo)
+        self.arriba = tuple(self.arriba)
+        self.bancos = tuple(self.bancos)
+        self.obtener = tuple(self.obtener)
+        self.fecha_top = tuple(self.fecha_top)
+        self.fecha_bottom = tuple(self.fecha_bottom)
+        self.penultima = tuple(self.penultima)
+
+@dataclass
+class TiemposConfig:
+    tiempo_espera_consulta: float
+    tiempo_espera_entre_clicks: float
+
+@dataclass
+class ConfigVisual:
+    coords: CheckerCoordenada
+    tiempos: TiemposConfig
+
+
+class pointCheckboxManager(coordenadaSimple):
+
+    def __init__(self,config_visual:ConfigVisual)->None:
+        self._despachador=config_visual
+
+        super().__init__(self._despachador.coords.fecha_top, self._despachador.tiempos.tiempo_espera_entre_clicks)
         
-        pass
+    def click_auxiliar_en_coordenada(self,punto:tuple)->None:
+        pyautogui.click(punto,interval=self._despachador.tiempos.tiempo_espera_entre_clicks)
+        time.sleep(self._despachador.tiempos.tiempo_espera_consulta)   
+
+    def siguiente_cordenada(self,pasos:int):
+        pyautogui.click(self._despachador.coords.abajo,clicks=abs(pasos),interval=self._despachador.tiempos.tiempo_espera_entre_clicks)
+
+    def  anterior_cordenada(self,pasos:int):
+        pyautogui.click(self._despachador.coords.arriba,clicks=abs(pasos),interval=self._despachador.tiempos.tiempo_espera_entre_clicks)
+
+
+    def obtener(self)->bool:
+        pyautogui.click(self._despachador.coords.obtener)
+        time.sleep(self._despachador.tiempos.tiempo_espera_consulta)
+
+class automataPrime:
+    def __init__(self,tarea:tareaPendiente,manipulacion:ExcelManager)->None:
+        self.tarea=tarea
+        self.manipualcion=manipulacion
+        self.matrizBotones:dict[int,boton]={}
+
 class automataConsultas:
     def __init__(self,punto_actual:pointCheckboxManager,obervador:carajo,ventanaExcel:Any)->None:
         #Esta es una ventana y un objeto para manipualr el excel posterior a esto si obtendremos el handle
@@ -476,8 +538,7 @@ class automataConsultas:
         #del archivo excel, la fecha mas reciente esta marcada y consultada
         self.matrizBotones:dict[int,boton]={}
         self._navegante=punto_actual
-        #le pasamos la radio para que pueda actualizar su propiocepcion
-        self._navegante.radio= self
+
         self._propiocepcion = 0
         #obtenemos la hoja excel del observador
         self.hojaExcel=self.observador.hojaExcel
@@ -505,27 +566,20 @@ class automataConsultas:
             x=boton(fechas,k)
             self.matrizBotones[fechas]=x
         
-    def avanzar_a_fecha(self,pasos:int,freno:int|None=None)->None:
+    def avanzar_a_fecha(self,pasos:int)->None:
 
         if pasos == 0:
             return
-        
-        if freno and abs(pasos)>=freno:
-            avance=freno
-        else:
-            avance=pasos
 
         if pasos>0:
-            self._navegante.siguiente_cordenada(avance)
+            self._navegante.siguiente_cordenada(pasos)
         elif pasos<0:
-            self._navegante.anterior_cordenada(avance)
+            self._navegante.anterior_cordenada(pasos)
 
-        print("propiocepcion",self._propiocepcion)
+        self._propiocepcion+=pasos
+        logger.debug("propiocepcion",self._propiocepcion)
 
-        if freno and abs(pasos)>=freno:
-            self._navegante.click_en_coordenada()
 
-        self.avanzar_a_fecha(pasos-avance,freno)
     
     def ir_apagar_boton(self,boton:boton):
 
@@ -687,27 +741,27 @@ class automataConsultas:
 
         print("Proceso de consultas finalizado")
 
-pat=RegexpPatrones()
-rutaPrueba=gv.RUTA_BASE/ "scripts"/ "prueba.xlsx"
+# pat=RegexpPatrones()
+# rutaPrueba=gv.RUTA_BASE/ "scripts"/ "prueba.xlsx"
 
-x=gv.ARCHIVOS_DATA_RAW[3]["ruta"]
-prueba=ExcelManager(pat)
-prueba._abrir_instancia_excel()
+# x=gv.ARCHIVOS_DATA_RAW[3]["ruta"]
+# prueba=ExcelManager(pat)
+# prueba._abrir_instancia_excel()
 
-prueba.traer_instancia_excel_al_frente()
-#prueba.traer_instancia_excel_al_frente()
-prueba.abrir_libro("libro1",x)
-libro=prueba.libro["libro1"]
+# prueba.traer_instancia_excel_al_frente()
+# prueba.traer_instancia_excel_al_frente()
+# prueba.abrir_libro("libro1",x)
+# libro=prueba.libro["libro1"]
 
-prueba.traer_libro_al_frente("libro1")
+# prueba.traer_libro_al_frente("libro1")
 
 
-prueba.extraer_tabla_y_guardar_en_ruta("libro1",rutaPrueba,gv.RUTA_LIBRO_CONTROL)
+# prueba.extraer_tabla_y_guardar_en_ruta("libro1",rutaPrueba,gv.RUTA_LIBRO_CONTROL)
 
-prueba.cerrar_libro_excel("libro1")
-time.sleep(2)   
-prueba.ventana_excel.Quit()
-prueba.ventana_excel = None
+# prueba.cerrar_libro_excel("libro1")
+# time.sleep(2)   
+# prueba.ventana_excel.Quit()
+# prueba.ventana_excel = None
 # casilla1=pointCheckboxManager(CONFIG_COORDS)
 # mapa=rutaCarpetas(rutasInstaciadas,x)
 

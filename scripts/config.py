@@ -12,11 +12,15 @@ class ConfigManager:
     def __init__(self,rutaJson:Path):
         self.rutaJson=rutaJson
         self.datos={}
+        self._cargarConfiguracion()
 
-    def cargarConfiguracion(self)->None:
+    def _cargarConfiguracion(self)->None:
+
+
         if not self.rutaJson.exists():
             logger.critical(f"Error al buscar el archivo de configuracion Json")
             raise FileNotFoundError(f"validar que {self.rutaJson} exista")
+        
         with open(self.rutaJson,encoding="utf-8") as f:
 
             try:
@@ -24,24 +28,45 @@ class ConfigManager:
 
             except FileNotFoundError:
                 logger.critical(f"ARCHIVO NO ENCONTRADO: No existe el archivo en {self.rutaJson}")
-                raise SystemExit(1) from None
+                raise
                 
             except json.JSONDecodeError as e:
                 logger.critical(f"JSON CORRUPTO: Error de sintaxis en {self.rutaJson}. Detalle: {e}")
-                raise SystemExit(1) from None
+                raise
                 
             except Exception as e:
                 logger.critical(f"ERROR INESPERADO al abrir {self.rutaJson}: {e}")
-                raise SystemExit(1) from None
+                raise
+            
+        if not isinstance(self.datos, dict):
+            logger.critical("El archivo config.json no tiene el formato correcto validar documentación")
+            raise ValueError("El JSON raíz debe ser un objeto (dict)")
+        
+    def obtener_dato(self,llave:str)->dict:
+        validar=self.datos[llave]  
+        if validar is None:
+            logger.critical(f"La llave '{llave}' no existe en el archivo de configuración.")
+            raise ValueError(f"La llave '{llave}' no existe en el archivo de configuración.")
+        return validar
+
     @property
     def cargar_ruta_base(self):
-        return Path(self.datos.get("ruta_base"))
+        return Path(self.obtener_dato("ruta_base"))
+    @property
+    def cargar_bimestre_inicial(self):
+        return self.obtener_dato("bimestre_inicial")
     @property
     def cargar_bimestre_final(self):
-        return self.datos.get("bimestre_final")
+        return self.obtener_dato("bimestre_final")
     @property
     def cargar_patrones(self):
-        return self.datos.get("patrones")
+        return self.obtener_dato("patrones")
+    @property
+    def cargar_coordenadas(self):
+        return self.obtener_dato("coordenadas")
+    @property
+    def cargar_tiempos(self):
+        return self.obtener_dato("tiempos")
 
 class DescripcionArchivosCriticos:
     def __init__(self):
@@ -133,13 +158,14 @@ class Paths:
                 logger.info(f"Archivo crítico encontrado en: {self.rutaParaLogger(archivo)}")
 
 class TipoPatron(Enum):
-    fecha = "fecha"
-    archivo_cnbv = "archivo_cnbv"
+    FECHA = "fecha"
+    ARCHIVO_CNBV = "archivo_cnbv"
         
 class RegexpPatrones:
 
 
     def __init__(self,patrones:dict):
+        
         if not patrones:
             logger.error("Se debe pasar un diccionario de patrones")
             raise ValueError("Se debe pasar un diccionario de patrones")
@@ -157,21 +183,22 @@ class RegexpPatrones:
         }
 
     @property
-    def cargar_patrones(self):
+    def revisar_patrones(self):
 
         return self._patrones
 
-    def revisar_patron(self,tipo:TipoPatron,cadena:str)->str|None:
-
-        patron = self._patrones[tipo]
+    def revisar_patron(self, tipo: TipoPatron, cadena: str) -> str | None:
+        
+        patron = self._patrones.get(tipo)
         if not patron.match(cadena):
             logger.error(f"El string '{cadena}' no cumple con el patrón '{tipo.name}'")
             return None
+        logger.debug(f"El string '{cadena}' cumple con el patrón '{tipo.name}'")
         return cadena
 
     def busqueda_patron_para_nombrar_carpetas(self,cadena:str)->str|None:
 
-        patron = self._patrones[TipoPatron.archivo_cnbv]
+        patron = self._patrones[TipoPatron.ARCHIVO_CNBV]
         resultado = patron.search(cadena)
 
         if resultado:
@@ -183,6 +210,4 @@ class RegexpPatrones:
         return None
 
 
-patron=RegexpPatrones()
-patrones={"fecha":r"^20\d{2}(0[1-9]|1[0-2])$","archivos_excel":r"^[^_]+_[^_]+_([^_]+)"}
 
