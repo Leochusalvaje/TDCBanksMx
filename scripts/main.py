@@ -10,8 +10,11 @@ def main():
     #---Inicializamos el despachador---# 
     ruta_config = Path(__file__).parent / "config.json"
     automata=PipelineOrquestador(ruta_config)
-    automata.procesar_archivos()
-    automata.config_visual
+    
+    pendientes=automata.procesar_archivos()
+    logger.info("--- Validación de rutas completada ---")
+    #---Aquí se podrían agregar más pasos del proceso, como iniciar el automata o procesar los pendientes---#
+
     
     # Aquí es donde paths.verificar_todo() debería disparar los logs
 
