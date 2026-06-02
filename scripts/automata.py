@@ -277,9 +277,17 @@ class PointCheckManagerPrime:
         click=coordenadaSimple(punto,self.tiempo_clicks)
         click.click()
     
-    def click_en_coordenada_relativista(self,boton:boton)->None:
+    #Esta coordenada no cambia y fue nombrada relativista por que cada vez que se presiona el boton avanzar o retroceder la ventana Activex 
+    # de excel se mueve y esta coordenada se mantiene fija respecto a la ventana activex por lo que se puede usar como referencia 
+    # para navegar por las fechas dentro del archivo excel
+
+    #Tener especial cuidado pues este metodo da pro echo que recibe un boton y siempre cambioara el estado
+    def click_en_coordenada_relativista(self,boton:boton|None=None)->None:
         click=coordenadaSimple(self.despachador.coordenadas.fecha_top,self.tiempo_clicks)
-        click.click(boton=boton)
+        if boton:
+            click.click(boton=boton)
+        else:
+            click.click()
 
     def siguiente_coordenada(self,numero_clicks:int)->None:
         click=coordenadaSimple(self.despachador.coordenadas.abajo,self.tiempo_clicks)
@@ -316,12 +324,70 @@ class pointCheckboxManager(coordenadaSimple):
         time.sleep(self._despachador.tiempos.tiempo_espera_consulta)
 
 class AutomataPrime:
-    def __init__(self,tarea:tareaPendiente,manipulacion:ExcelManager,navegante:PointCheckManagerPrime)->None:
-        self.tarea=tarea
-        self.manipualcion=manipulacion
-        self.matrizBotones:dict[int,boton]={}
+    def __init__(self,tareas:list[tareaPendiente],manipulacion:ExcelManager,navegante:PointCheckManagerPrime,lista_fechas:list)->None:
+        self.tareas=tareas
+        self.manipulacion=manipulacion
+        self.matriz_botones:dict[int,boton]={}
         self.navegante=navegante
+        self.lista_fechas=lista_fechas
+        self._propiocepcion=0
 
+
+        try:
+            self._crear_botones()
+            primerboton=next(iter(self.matriz_botones.values()))
+            primerboton.estado=True
+        
+        except Exception as e:
+            logger.error(f"Error critico no se pudieron crear los botones para guiar al automata, revisar la propiedad \"self.lista_fechas\"\n{e}")
+    
+    def _crear_botones(self)->dict[int:boton]:
+        for k,j in enumerate(self.lista_fechas):
+            botoncreado=boton(j,k)
+            self.matriz_botones[k]=botoncreado
+    
+    def _avanzar_a_fecha(self,pasos:int)->None:
+
+        if pasos==0:
+            return
+        
+        if pasos>0:
+            self.navegante.siguiente_coordenada(pasos)
+        
+        if pasos<0:
+            self.navegante.anterior_coordenada(pasos)
+        
+        self._propiocepcion+=pasos
+        logger.debug("propiocepcion",self._propiocepcion)  
+
+
+    def _apagar_boton(self,boton:boton)->None:
+        self._avanzar_a_fecha(boton.posicion-self._propiocepcion)
+        self.navegante.click_en_coordenada_relativista(boton)
+    
+    def _apagar_todos_los_botones_encendidos(self)->None:
+
+        for boton in self.matriz_botones.values():
+            if boton.estado:
+                self._apagar_boton(boton)
+
+    def _invertir_estado_varios_botones(self,cambios:list)->None:
+        for botonFecha in cambios:
+            self.matrizBotones[botonFecha].cambiar_estado()
+
+    @property
+    def fechas_de_botones_encendidos(self)->list:
+        return [boton.fecha for boton in self.matriz_botones.values() if boton.estado]
+    
+    @property
+    def propiocepcion_actual(self)->int:
+        print (self._propiocepcion)
+        return self._propiocepcion
+    
+    def homming(self)->None:
+        self.manipulacion.activar_ventana_al_frente()
+        self.avanzar_a_fecha(-self._propiocepcion)
+        self._navegante.click_en_coordenada_relativista()
 class automataConsultas:
     def __init__(self,punto_actual:pointCheckboxManager,obervador:carajo,ventanaExcel:Any)->None:
         #Esta es una ventana y un objeto para manipualr el excel posterior a esto si obtendremos el handle
