@@ -23,8 +23,9 @@ import pywintypes as wty
 import re
 from typing import Any,TYPE_CHECKING
 from config import RegexpPatrones, TipoPatron
+import exceptions as ex
 
-from excel_manager import tareaPendiente,ExcelManager,carajo
+from excel_manager import TareaPendiente,ExcelManager,ManagerPendientes,TipoLibro
 
 if TYPE_CHECKING:
     from config import RegexpPatrones
@@ -52,6 +53,43 @@ coord_desmarcar=(155,387)
 coord_fecha=(155,423)
 coord_ultima=(155,385)
 coord_penultima=(156,404)
+
+
+
+#CheckerCoordenada es un esquema de datos para almacenar las coordenadas de los botones y cordenadas que el automata va a utilizar para navegar 
+#en el archivo excel de la CNBV.
+
+@dataclass
+class CheckerCoordenada:
+    abajo: tuple[int, int]
+    arriba: tuple[int, int]
+    bancos: tuple[int, int]
+    obtener: tuple[int, int]
+    fecha_top: tuple[int, int]
+    fecha_bottom: tuple[int, int]
+    penultima: tuple[int, int]
+
+    def __post_init__(self):
+        self.abajo = tuple(self.abajo)
+        self.arriba = tuple(self.arriba)
+        self.bancos = tuple(self.bancos)
+        self.obtener = tuple(self.obtener)
+        self.fecha_top = tuple(self.fecha_top)
+        self.fecha_bottom = tuple(self.fecha_bottom)
+        self.penultima = tuple(self.penultima)
+
+#asignamios los tiempos y la configuracion de cordenadas que se cargan desde el config.json a la clase ConfigVisual para que el automata pueda acceder a ellos de forma centralizada y 
+#organizada, ademas de que al cargar la configuracion desde el config.json se puede modificar facilmente sin necesidad de tocar el codigo del automata,
+# lo que facilita la adaptacion a diferentes pantallas o cambios en la interfaz de la CNBV.
+@dataclass
+class TiemposConfig:
+    tiempo_espera_consulta: float
+    tiempo_espera_entre_clicks: float
+
+@dataclass
+class ConfigVisual:
+    coordenadas: CheckerCoordenada
+    tiempos: TiemposConfig
 
 #Funciones auxialiares
 def activar_ventana_al_frente(hwnd, timeout=5)-> None:
@@ -147,78 +185,92 @@ def string_eureka_fechas(libro:Any,patronValidador:RegexpPatrones)->tuple:
 # ya que es la que se utiliza para navegar por las fechas dentro del archivo excel y para validar que se esta extrayendo la información correcta, si esta lista no se 
 # genera correctamente el automata no funcionara correctamente, por lo que es importante revisar que se este generando correctamente y que se este cumpliendo el patron 
 # establecido en la clase RegexpPatrones.
+
+
+
 def lista_verdad(bimestreInicial:str,bimestreFinal,patronValidador:RegexpPatrones)->list:
     
-    fecha=patronValidador.revisar_patron(TipoPatron.FECHA,bimestreFinal)
-
+    fecha_final=patronValidador.revisar_patron(TipoPatron.FECHA,bimestreFinal)
+    fecha_inicial=patronValidador.revisar_patron(TipoPatron.FECHA,bimestreInicial)
     try:
-        yearbase=int(bimestreInicial[:4])
-        yearUltimobimestre=int(fecha[:4])
-        yearsTranscurridos=yearUltimobimestre-yearbase
-        bimestreActual=(14-int(fecha[-2:]))/2
+        year_base=int(fecha_inicial[:4])
+        year_ultimo_bimestre=int(fecha_final[:4])
+        years_transcurridos=year_ultimo_bimestre-year_base
+        bimestre_actual=(14-int(fecha_final[-2:]))/2
     except (ValueError, TypeError) as e:
         # Usamos .exception para que guarde el rastro (traceback)
         # Y metemos type(e).__name__ para que el mensaje claro
-        logger.exception(f"[{type(e).__name__}] Error fatal en fechas: {bimestreInicial} y {bimestreFinal} revisar que se esten ingresando como strings. Detalle: {e}")
-        # Esto es lo que hace que el programa "muera" o falle rápido
+        logger.exception(f"[{type(e).__name__}] Error fatal en fechas: {fecha_inicial} y {fecha_final} revisar que se esten ingresando como strings. Detalle: {e}")
+        # Esto es lo que hace que el programa falle rápido
         raise
 
-    bimestreBase=int(bimestreInicial[-2:])/2
-    bimestresEnArchivo=int(6*(yearsTranscurridos-1)+(bimestreBase+bimestreActual))
-    logger.info(f"Bimestres contenidos en cada archivo excel de la CNBV: {bimestresEnArchivo} Este parametro es crucial y se genera con los parametros del config.json ingresados por el USUARIO humano para el funcionamiento del automata, si no se esta extrayendo la cantidad correcta de bimestres revisar que las fechas de entrada sean correctas y que se este cumpliendo el patron establecido en la clase RegexpPatrones")
+    bimestre_base=int(fecha_inicial[-2:])/2
+    bimestres_en_archivo=int(6*(years_transcurridos-1)+(bimestre_base+bimestre_actual))
+    logger.info(f"Bimestres contenidos en cada archivo excel de la CNBV: {bimestres_en_archivo} Este parametro es crucial y se genera con los parametros del config.json ingresados por el USUARIO humano para el funcionamiento del automata, si no se esta extrayendo la cantidad correcta de bimestres revisar que las fechas de entrada sean correctas y que se este cumpliendo el patron establecido en la clase RegexpPatrones")
     #para resolver el seguimiento de fechas se solcuiona con una transformacion lineal que planteo su servidor y tener una lista de todos los bimestres 
     #que estan contenidos en el archivo excel al momento de abrirlo
     y=[]
-    yearconstante=int(bimestreInicial)
+    year_constante=int(fecha_inicial)
+    base_anual_serie =year_base*100
     c=0
-    for _ in range(1,bimestresEnArchivo+1):
 
-        yearconstante+=2    
-        if (yearconstante-201100-100*c)==14:
+    for _ in range(1,bimestres_en_archivo+1):
+        y.append(year_constante)
+        year_constante+=2    
+        if (year_constante-base_anual_serie -100*c)==14:
             c+=1 
-            yearconstante+=100
-            yearconstante-=12
+            year_constante+=100
+            year_constante-=12
 
-        y.append(yearconstante)
+
     y.reverse()
 
 
     return y
-"""
-boton es la clase para abtarer un boton y que el automata pueda tener una referencia mental de cada boton y su estado, 
-esto es crucial para el funcionamiento del automata ya que sin esta clase el automata no tendria forma de saber si un boton esta activo o no y no 
-podria tomar decisiones en base a eso, ademas de que al tener una referencia mental de cada boton se puede implementar logica adicional 
-como apagar todos los botones encendidos o invertir el estado de varios botones a la vez, lo que facilita la navegacion 
-por las fechas dentro del archivo excel y la extraccion de la informacion correcta.
-"""
 
-class boton:
-    def __init__(self,fecha:int,posicion:int)->None:
+
+class Boton:
+    """
+Boton es la funciona para abstraer el checkbox dentro de cada archivo de la CNBV, cada boton tiene una fecha que representa el bimestre que se esta consultando, una posicion que representa la posicion del boton dentro de la lista de fechas y un estado que representa si el boton esta encendido o apagado,
+
+Attributos:
+    fecha (int): La fecha que representa el bimestre que se esta consultando.
+    posicion (int): La posicion del boton dentro de la lista de fechas.
+    estado (bool): El estado del boton, True si esta encendido y False si esta apagado.
+"""
+    def __init__(self,fecha:int,posicion:int,estado:bool=False)->None:
         self.fecha=fecha
         self.posicion=posicion
-        self.estado=False
+        self.estado=estado
     @property
     def estado_actual(self)->bool:
         return self.estado
     
     def cambiar_estado(self)->None:
         self.estado=not self.estado
+    
 
 
 
-"""
-coordenadaSimple es una clase que usa la libreria pyautogui para hacer click en una coordenada especifica,
-esta clase se hizo para resolver el problema de que el automata no tiene forma de saber si una cordenada dentro
-del checkbox y tarbajar con la coordenada de obtener esta activa o no adicionalmente se deeja la logica de la manipulacion del click en esta funcion por si en el futuro
-se decide agregar una libreria diferente para un entorno que no sa windows.
-"""
+
 class coordenadaSimple:
+    """
+    Representa una coordenada específica en la interfaz de la CNBV para automatizar clicks.
 
-    def __init__(self,coordenada:tuple,intervalo:int)->None:
+    Debido a que el archivo de la CNBV funciona como un frontend en Excel sin acceso 
+    directo a los datos de las fechas, se utiliza 'pyautogui' para navegar visualmente, 
+    seleccionar periodos y accionar el botón de obtención de datos.
+
+    Attributos:
+        coordenada (tuple): Ubicación (x, y) en la pantalla para ejecutar el click.
+        intervalo (int): Tiempo de espera en segundos interno de pyautogui entre clicks.
+    """
+
+    def __init__(self,coordenada:tuple,intervalo:float)->None:
         self.coordenada=coordenada
         self.intervalo=intervalo 
 
-    def click(self,boton:boton|None=None,tiempo_espera:float|None=None,numero_clicks:int|None=1)->None:
+    def click(self,boton:Boton|None=None,tiempo_espera:float|None=None,numero_clicks:int|None=1)->None:
 
         pyautogui.click(self.coordenada,interval=self.intervalo,clicks=numero_clicks)
 
@@ -228,45 +280,21 @@ class coordenadaSimple:
         if boton:
             boton.cambiar_estado()
 
-"""
-CheckerCoordenada es un esquema de datos para almacenar las coordenadas de los botones y cordenadas que el automata va a utilizar para navegar 
-en el archivo excel de la CNBV.
-"""
-@dataclass
-class CheckerCoordenada:
-    abajo: tuple
-    arriba: tuple
-    bancos: tuple
-    obtener: tuple
-    fecha_top: tuple
-    fecha_bottom: tuple
-    penultima: tuple
-
-    def __post_init__(self):
-        self.abajo = tuple(self.abajo)
-        self.arriba = tuple(self.arriba)
-        self.bancos = tuple(self.bancos)
-        self.obtener = tuple(self.obtener)
-        self.fecha_top = tuple(self.fecha_top)
-        self.fecha_bottom = tuple(self.fecha_bottom)
-        self.penultima = tuple(self.penultima)
-
-#asignamios los tiempos y la configuracion de cordenadas que se cargan desde el config.json a la clase ConfigVisual para que el automata pueda acceder a ellos de forma centralizada y 
-#organizada, ademas de que al cargar la configuracion desde el config.json se puede modificar facilmente sin necesidad de tocar el codigo del automata,
-# lo que facilita la adaptacion a diferentes pantallas o cambios en la interfaz de la CNBV.
-@dataclass
-class TiemposConfig:
-    tiempo_espera_consulta: float
-    tiempo_espera_entre_clicks: float
-
-@dataclass
-class ConfigVisual:
-    coordenadas: CheckerCoordenada
-    tiempos: TiemposConfig
-
-
 
 class PointCheckManagerPrime:
+    """Maneja los clicks y la navegación de fechas en la interfaz visual de la CNBV.
+
+    Esta clase centraliza las operaciones de clic auxiliares sobre coordenadas, la
+    selección de fechas relativas dentro de la ventana ActiveX y la obtención de datos.
+    Se apoya en la configuración visual proporcionada para determinar los tiempos de
+    espera entre clicks y los puntos de interacción en pantalla.Todos los atributos de coordenadas y tiempos se cargan desde el archivo de configuración config.json a través de la clase ConfigVisual, lo que permite una fácil adaptación a diferentes pantallas o cambios en la interfaz de la CNBV sin necesidad de modificar el código del automata.
+
+    Atributos:
+        despachador (ConfigVisual): Configuración de coordenadas y tiempos.
+        tiempo_clicks (float): Intervalo entre clicks.
+        tiempo_consulta (float): Tiempo de espera tras la obtención de datos.
+    """
+
     def __init__(self,config_visual:ConfigVisual):
         self.despachador=config_visual
         self.tiempo_clicks=config_visual.tiempos.tiempo_espera_entre_clicks
@@ -282,7 +310,7 @@ class PointCheckManagerPrime:
     # para navegar por las fechas dentro del archivo excel
 
     #Tener especial cuidado pues este metodo da pro echo que recibe un boton y siempre cambioara el estado
-    def click_en_coordenada_relativista(self,boton:boton|None=None)->None:
+    def click_en_coordenada_relativista(self,boton:Boton|None=None)->None:
         click=coordenadaSimple(self.despachador.coordenadas.fecha_top,self.tiempo_clicks)
         if boton:
             click.click(boton=boton)
@@ -324,12 +352,25 @@ class pointCheckboxManager(coordenadaSimple):
         time.sleep(self._despachador.tiempos.tiempo_espera_consulta)
 
 class AutomataPrime:
-    def __init__(self,tareas:list[tareaPendiente],manipulacion:ExcelManager,navegante:PointCheckManagerPrime,lista_fechas:list)->None:
+    """Clase principal encargada de procesar las tareas pendientes de la CNBV.
+    
+    Navega por las fechas dentro del archivo Excel, selecciona los periodos 
+    correspondientes y acciona el botón de obtención de datos para extraer 
+    la información necesaria.
+
+    Attributes:
+        tareas (list[TareaPendiente]): Una lista de tareas pendientes que el autómata debe 
+            procesar. Cada tarea contiene la información del archivo Excel y su destino.
+        manipulacion (ExcelManager): Instancia encargada de manejar la interacción con los 
+            archivos Excel (apertura, lectura y escritura).
+        navegante (PointCheckManagerPrime): Instancia encargada de la navegación visual en 
+            la interfaz de la CNBV (clicks en coordenadas y obtención de datos).
+    """
+    def __init__(self,tareas:TareaPendiente,manipulacion:ExcelManager,navegante:PointCheckManagerPrime)->None:
         self.tareas=tareas
         self.manipulacion=manipulacion
-        self.matriz_botones:dict[int,boton]={}
+        self.matriz_botones:dict[int,Boton]={}
         self.navegante=navegante
-        self.lista_fechas=lista_fechas
         self._propiocepcion=0
 
 
@@ -338,13 +379,13 @@ class AutomataPrime:
             primerboton=next(iter(self.matriz_botones.values()))
             primerboton.estado=True
         
-        except Exception as e:
+        except ex.ErrorAlCrearBotones as e:
             logger.error(f"Error critico no se pudieron crear los botones para guiar al automata, revisar la propiedad \"self.lista_fechas\"\n{e}")
     
-    def _crear_botones(self)->dict[int:boton]:
-        for k,j in enumerate(self.lista_fechas):
-            botoncreado=boton(j,k)
-            self.matriz_botones[k]=botoncreado
+    def _crear_botones(self)->list[Boton]:
+        for clave, valor in self.tareas.diccionario_pendientes.items():
+            botoncreado=Boton(clave,valor.posicion)
+            self.matriz_botones[clave]=botoncreado
     
     def _avanzar_a_fecha(self,pasos:int)->None:
 
@@ -359,9 +400,25 @@ class AutomataPrime:
         
         self._propiocepcion+=pasos
         logger.debug("propiocepcion",self._propiocepcion)  
+    
+    def _procesar_pendiente(self,boton:Boton)->None:
+        #toamr en cuenat que cionfiorme se hacne laks consulats se qu
+        if boton.posicion==0:
+            if self.validar_hoja_contra_pendiente(boton.fecha):
+                self.navegante.obtener()
+                self.manipulacion.extraer_tabla_y_guardar_en_ruta(self.tareas.ruta_carpeta_destino/f"{self.tareas.nombre_serie}_{boton.fecha}.xlsx")
+                self.navegante.click_en_coordenada_relativista(boton=boton)
+            return
+        
+        if boton.posicion!=0:
+            self.navegante.click_en_coordenada_relativista(boton=boton)
 
+        if self.validar_hoja_contra_pendiente(boton.fecha):
+            self.navegante.obtener()
+            self.manipulacion.extraer_tabla_y_guardar_en_ruta(self.tareas.ruta_carpeta_destino/f"{self.tareas.nombre_serie}_{boton.fecha}.xlsx")
+            self.navegante.click_en_coordenada_relativista(boton=boton)
 
-    def _apagar_boton(self,boton:boton)->None:
+    def _apagar_boton(self,boton:Boton)->None:
         self._avanzar_a_fecha(boton.posicion-self._propiocepcion)
         self.navegante.click_en_coordenada_relativista(boton)
     
@@ -385,11 +442,51 @@ class AutomataPrime:
         return self._propiocepcion
     
     def homming(self)->None:
-        self.manipulacion.activar_ventana_al_frente()
+
+        self.manipulacion.traer_instancia_excel_al_frente()
         self.avanzar_a_fecha(-self._propiocepcion)
         self._navegante.click_en_coordenada_relativista()
+    def validar_hoja_contra_pendiente(self,fecha_pendiente:int)->bool:
+
+        cotejar=self.manipulacion.libro[TipoLibro.LIBRO_CONSULTA].fecha_en_tabla
+        
+        if int(cotejar)!=fecha_pendiente:
+            logger.debug(f"La fecha consultada en la hoja excel: {cotejar} no coincide con el pendiente actual: {fecha_pendiente}")
+            return False
+        else:
+            return True
+        
+
+        logger.debug(f"Se valida el valor consultado coincide con la tarea pendiente se puede proceder a extraer al info de la fecha {cotejar}")
+
+    
+    def procesar_tarea(self)->None:
+        try:
+            self.manipulacion.abrir_instancia_excel()
+            self.manipulacion.abrir_libro(TipoLibro.LIBRO_CONSULTA, self.tareas.ruta_archivo_excel)
+            self.manipulacion.traer_instancia_excel_al_frente()
+            self.manipulacion.traer_libro_al_frente(TipoLibro.LIBRO_CONSULTA)
+
+            time.sleep(1)
+
+            self.navegante.click_auxiliar_en_cordenada(self.navegante.despachador.coordenadas.bancos)
+            self.navegante.click_auxiliar_en_cordenada(self.navegante.despachador.coordenadas.bancos)
+            self.navegante.obtener()
+            stop=0
+            for fecha,pendiente in self.tareas.diccionario_pendientes.items():
+                stop+=1
+                self._avanzar_a_fecha(pendiente.posicion)
+                self._procesar_pendiente(self.matriz_botones[fecha])
+
+                if stop>3:
+                    break
+
+
+        finally:
+            self.manipulacion.cerrar_instancia_excel()
+
 class automataConsultas:
-    def __init__(self,punto_actual:pointCheckboxManager,obervador:carajo,ventanaExcel:Any)->None:
+    def __init__(self,punto_actual:pointCheckboxManager,obervador:ManagerPendientes,ventanaExcel:Any)->None:
         #Esta es una ventana y un objeto para manipualr el excel posterior a esto si obtendremos el handle
         self.ventanaExcel=ventanaExcel
         self.hdwm_excel=ventanaExcel.Hwnd
@@ -398,7 +495,7 @@ class automataConsultas:
         self.matrizFechas=self.observador.listaFechas
         #con las fechas creamos botones con todos inicializados en falso, osea desmarcados y solo el primero queda marcado tal y como esta el estandar
         #del archivo excel, la fecha mas reciente esta marcada y consultada
-        self.matrizBotones:dict[int,boton]={}
+        self.matrizBotones:dict[int,Boton]={}
         self._navegante=punto_actual
 
         self._propiocepcion = 0
@@ -425,7 +522,7 @@ class automataConsultas:
 
 
         for k, fechas in enumerate(self.matrizFechas):
-            x=boton(fechas,k)
+            x=Boton(fechas,k)
             self.matrizBotones[fechas]=x
         
     def avanzar_a_fecha(self,pasos:int)->None:
@@ -440,10 +537,8 @@ class automataConsultas:
 
         self._propiocepcion+=pasos
         logger.debug("propiocepcion",self._propiocepcion)
-
-
-    
-    def ir_apagar_boton(self,boton:boton):
+ 
+    def ir_apagar_boton(self,boton:Boton):
 
         if boton.estado:
             self.avanzar_a_fecha(boton.posicion-self._propiocepcion)
@@ -507,6 +602,7 @@ class automataConsultas:
         self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["bancos"])
         self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["bancos"])
         self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["obtener"])
+
         #Manejo de caso atipico para marcar todos los bancos
         if not string_eureka_fechas(self.hojaExcel)[2]:
             self._navegante.click_auxiliar_en_coordenada(self._navegante._despachador["bancos"])
@@ -608,7 +704,7 @@ class automataConsultas:
 
 # x=gv.ARCHIVOS_DATA_RAW[3]["ruta"]
 # prueba=ExcelManager(pat)
-# prueba._abrir_instancia_excel()
+# prueba.abrir_instancia_excel()
 
 # prueba.traer_instancia_excel_al_frente()
 # prueba.traer_instancia_excel_al_frente()
@@ -630,7 +726,7 @@ class automataConsultas:
 # libro,ventana,*_=abrir_excel_por_ruta(x)
 
 
-# observador=carajo(libro,mapa)
+# observador=ManagerPendientes(libro,mapa)
 # observador.archivosCreados
 
 # hoja1=automataConsultas(casilla1,observador,ventana)

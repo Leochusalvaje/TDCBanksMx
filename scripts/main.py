@@ -10,6 +10,7 @@ def main():
     #---Inicializamos el despachador---# 
     ruta_config = Path(__file__).parent / "config.json"
     automata=PipelineOrquestador(ruta_config)
+    automata.generar_tareas_pendientes()
     
     pendientes=automata.procesar_archivos()
     logger.info("--- Validación de rutas completada ---")
@@ -22,11 +23,11 @@ if __name__ == "__main__":
     # La configuración se hace UNA sola vez al principio
     logging.basicConfig(
         force=True,  # Asegura que esta configuración se aplique incluso si logging ya ha sido configurado por otro módulo
-        level=logging.INFO,
+        level=logging.DEBUG,
         format='%(asctime)s - [%(name)s] - %(levelname)s - %(message)s',
         handlers=[
             logging.FileHandler("informacion.log",mode='w',encoding='utf-8'), # Escribe en el archivo
-            logging.StreamHandler()                # mostrar en consola
+            #logging.StreamHandler()                # mostrar en consola
         ]
 
     )

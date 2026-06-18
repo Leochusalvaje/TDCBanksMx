@@ -1,12 +1,27 @@
+from dataclasses import dataclass
+
 from config import ConfigManager,Paths,DescripcionArchivosCriticos,RegexpPatrones
 from pathlib import Path
 from automata import TiemposConfig,CheckerCoordenada,ConfigVisual,pointCheckboxManager,automataConsultas
 from automata import lista_verdad,AutomataPrime,PointCheckManagerPrime
 import logging
-from excel_manager import rutaCarpetas,carajo,ExcelManager,tareaPendiente
+from excel_manager import rutaCarpetas,ManagerPendientes,ExcelManager,TareaPendiente
 #Configuracion del nombre del logger para que se muestre en los logs siempre va despues de las importaciones solo en caso de utilizar decoradores poner antes del decorador
 logger=logging.getLogger("Orquestador")
 
+@dataclass
+class ContextoAutomata:
+    """ContextoAutomata es una clase de datos que encapsula toda la información y configuraciones necesarias para que el automata pueda ejecutar las consultas de manera eficiente y organizada. Esta clase actúa como un contenedor centralizado para todas las configuraciones, rutas, patrones y tiempos que el automata necesita para funcionar correctamente.
+    
+    Atributos:
+    - config_visual (ConfigVisual): Contiene las coordenadas y tiempos configurados para el automata, utilizados para realizar los clics y esperar los tiempos adecuados durante la ejecución.
+    - lista_fechas (list[str]): Una lista de fechas generada a partir de la configuración del bimestre inicial y final, utilizada para navegar por las fechas dentro del archivo Excel.
+    - ventana_excel (ExcelManager): Una instancia de ExcelManager que se encarga de manejar la interacción con los archivos Excel, incluyendo la apertura, lectura y escritura de datos.
+    """
+    tareas:list[TareaPendiente]
+    manipulacion:ExcelManager
+    navegante:PointCheckManagerPrime
+    lista_fechas:list[str]
 
 
 
@@ -36,11 +51,10 @@ class PipelineOrquestador:
         
         self.UI=PointCheckManagerPrime(self.config_visual)
 
+        self.tareas_pendientes: list[TareaPendiente] = []
 
-
-
-    def procesar_archivos(self):
-        lista_tareas_pendientes:list[tareaPendiente]=[]
+    def generar_tareas_pendientes(self)->None:
+        lista_tareas_pendientes:list[TareaPendiente]=[]
 
         for rutaExcel in self.paths.dataTdc.iterdir():
             if rutaExcel.is_file() and rutaExcel.suffix in ['.xlsx', '.xls']:
@@ -51,12 +65,16 @@ class PipelineOrquestador:
                     # pendientes que el automata utilizara para realizar las consultas en la pagina de la CNBV, es importante revisar que esta logica este 
                     # funcionando correctamente.
                     gestorRutas = rutaCarpetas(self.paths.output, rutaExcel, self.patrones)
-                    gestorPendientes = carajo(gestorRutas, self.lista_fechas)
-                    lista_tareas_pendientes.append(gestorPendientes.mapa_de_pendientes) 
+                    gestorPendientes = ManagerPendientes(gestorRutas, self.lista_fechas)
+                    lista_tareas_pendientes.append(gestorPendientes.mapa_de_pendientes_alfa) 
                 except Exception as e:
                     logger.error(f"Error al procesar {rutaExcel.name}: {e}")
             else:
                 logger.warning(f"Archivo no válido (no es Excel): {rutaExcel.name}")
-        
-        aut_debugger=AutomataPrime(lista_tareas_pendientes,self.ventana_excel,self.UI,self.lista_fechas)
-        return aut_debugger
+        self.tareas_pendientes=lista_tareas_pendientes
+
+    
+    def procesar_archivos(self)->None:
+        aut_debugger=AutomataPrime(self.tareas_pendientes[0],self.ventana_excel,self.UI)
+        aut_debugger.procesar_tarea()
+        pass
