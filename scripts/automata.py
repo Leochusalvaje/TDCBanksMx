@@ -402,7 +402,7 @@ class AutomataPrime:
         logger.debug("propiocepcion",self._propiocepcion)  
     
     def _procesar_pendiente(self,boton:Boton)->None:
-        #toamr en cuenat que cionfiorme se hacne laks consulats se qu
+        #toamr en cuenat que cionfiorme se hacne laks consulats se quus
         if boton.posicion==0:
             if self.validar_hoja_contra_pendiente(boton.fecha):
                 self.navegante.obtener()
