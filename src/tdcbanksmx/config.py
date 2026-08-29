@@ -1,4 +1,5 @@
 
+import os
 from pathlib import Path
 import re
 import logging
@@ -49,9 +50,7 @@ class ConfigManager:
             raise ValueError(f"La llave '{llave}' no existe en el archivo de configuración.")
         return validar
 
-    @property
-    def cargar_ruta_base(self):
-        return Path(self.obtener_dato("ruta_base"))
+
     @property
     def cargar_bimestre_inicial(self):
         return self.obtener_dato("bimestre_inicial")
@@ -87,26 +86,30 @@ class DescripcionArchivosCriticos:
             }
         }
 
-class Paths:
-    def __init__(self, rutaBase:str,descripciones: DescripcionArchivosCriticos=DescripcionArchivosCriticos()):
+class PathsArchivosCriticos:
+    def __init__(self, descripciones: DescripcionArchivosCriticos = DescripcionArchivosCriticos()):
 
-        #---CARPETAS PRINCIPALES---#
-        # Se usa .cwd() (Current Working Directory) para obtener la carpeta desde donde se 
-        # lanza el programa, evitando que Path(__file__) use la ubicación de este archivo de clase.
-        # Se añade .resolve() para "limpiar" la ruta: convierte el punto "." o rutas relativas 
-        # en rutas absolutas de Windows (C:\...), asegurando que el logger y el sistema 
-        # encuentren las carpetas sin ambigüedades.
-        if rutaBase == ".":
-            self.base = Path.cwd().resolve()
+        ruta_desde_entorno = os.environ.get("TDCBANKSMX_ROOT")
+
+        if ruta_desde_entorno:
+            # Alguien configuró explícitamente dónde vive el proyecto en ESTA máquina
+            self.base = Path(ruta_desde_entorno).resolve()
         else:
-            self.base = Path(rutaBase).resolve()
+            # Fallback: subir desde config.py hasta la raíz del repo.
+            # src/tdcbanksmx/config.py -> .parent.parent.parent = raíz
+            self.base = Path(__file__).parent.parent.parent.resolve()
+            logger.warning(
+                f"TDCBANKSMX_ROOT no está definida, usando ruta calculada: {self.base}. "
+                "Define la variable de entorno si esto no es correcto en tu máquina."
+            )
 
 
         self.data=self.base/"Data"
         self.dataTdc=self.data/"datosTarjetasCredito"
         self.output=self.base/"Output"
         self.dataset=self.base/"Datasets"
-        self.scripts=self.base/"scripts"
+        self.scripts=self.base/"src"
+        self.tdcbanksmx=self.scripts/"tdcbanksmx"
         #---LISTA DE TODAS LAS CARPETAS---#
         self.ALL = [
             self.base,
@@ -114,18 +117,17 @@ class Paths:
             self.dataTdc,
             self.output,
             self.dataset,
-            self.scripts
+            self.scripts,
+            self.tdcbanksmx
         ]
         #---ARCHIVOS---#
-        self.configJson=self.scripts/"config.json"
+        self.configJson=self.tdcbanksmx/"config.json"
         self.libroControl=self.output/"LibroControl.xlsx"
         #---CREAR DIRECTORIOS---#
         self._descripciones=descripciones
-        try:
-            self._crearDirectorios()
-        except Exception as e:
-            logger.critical(f"Error al crear directorios: {e} revisar los permisos de escritura en la ruta {self.base}")
-        self._validarArchivosCriticos()
+
+
+
 
     def rutaParaLogger(self, ruta_objetivo):
 
@@ -150,9 +152,9 @@ class Paths:
         for archivo in archivos_criticos:
             if not archivo.exists():
                 logger.critical(f"Archivo crítico no encontrado: {self.rutaParaLogger(archivo)}. Asegúrate de que el archivo exista en la ruta especificada.")
-                logger.info(f"NOMBRE: {info[archivo.stem]['nombre']}")
-                logger.info(f"DESCRIPCIÓN: {info[archivo.stem]['descripcion']}")
-                logger.info(f"ACCIÓN: {info[archivo.stem]['instruccion']}")
+                logger.info(f"NOMBRE: {info[archivo.name]['nombre']}")
+                logger.info(f"DESCRIPCIÓN: {info[archivo.name]['descripcion']}")
+                logger.info(f"ACCIÓN: {info[archivo.name]['instruccion']}")
                 raise FileNotFoundError(f"Archivo crítico no encontrado: {archivo}")
             else:
                 logger.info(f"Archivo crítico encontrado en: {self.rutaParaLogger(archivo)}")

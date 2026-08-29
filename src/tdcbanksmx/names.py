@@ -1,5 +1,5 @@
 import re
-import routes as gv
+import tdcbanksmx.routes as gv
 from pathlib import Path
 from typing import List, Tuple
 

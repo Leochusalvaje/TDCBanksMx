@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 
-from config import ConfigManager,Paths,DescripcionArchivosCriticos,RegexpPatrones
+from tdcbanksmx.config import ConfigManager,PathsArchivosCriticos,DescripcionArchivosCriticos,RegexpPatrones
 from pathlib import Path
-from automata import TiemposConfig,CheckerCoordenada,ConfigVisual,pointCheckboxManager,automataConsultas
-from automata import lista_verdad,AutomataPrime,PointCheckManagerPrime
+from tdcbanksmx.automata import TiemposConfig,CheckerCoordenada,ConfigVisual,pointCheckboxManager,automataConsultas
+from tdcbanksmx.automata import lista_verdad,AutomataPrime,PointCheckManagerPrime
 import logging
-from excel_manager import rutaCarpetas,ManagerPendientes,ExcelManager,TareaPendiente
+from tdcbanksmx.excel_manager import rutaCarpetas,ManagerPendientes,ExcelManager,TareaPendiente
+
 #Configuracion del nombre del logger para que se muestre en los logs siempre va despues de las importaciones solo en caso de utilizar decoradores poner antes del decorador
 logger=logging.getLogger("Orquestador")
 
@@ -28,19 +29,23 @@ class ContextoAutomata:
 class PipelineOrquestador:
     def __init__(self, ruta_config: Path):
         self.despachador = ConfigManager(ruta_config)
-        self.descripciones = DescripcionArchivosCriticos()
-        self.paths = Paths(self.despachador.cargar_ruta_base, self.descripciones)
-        self.patrones = RegexpPatrones(self.despachador.cargar_patrones)
+
+
+        self.paths = PathsArchivosCriticos(DescripcionArchivosCriticos())
+
+        try:
+            self.paths._crearDirectorios()
+        except Exception as e:
+            logger.critical(f"Error al crear directorios: {e} revisar los permisos de escritura en la ruta {self.base}")
+        self.paths._validarArchivosCriticos()
+
 
         # Esta lista es generada por el usuario en el config.json y sirve para que el automata pueda navegar por las fechas dentro del archivo excel,
         # es crucial para el funcionamiento del automata ya que sin esta lista el automata no sabria como navegar por las fechas dentro del archivo excel 
         # y no podria extraer la información correctamente, por lo que es importante revisar que se este generando correctamente y que se este cumpliendo el patron 
         # establecido en la clase RegexpPatrones.
-        self.lista_fechas = lista_verdad(
-            self.despachador.cargar_bimestre_inicial,
-            self.despachador.cargar_bimestre_final,
-            self.patrones
-        )
+
+
         self.ventana_excel = ExcelManager(self.patrones,self.paths.libroControl)
         #Cargamos la configuracion de coordenadas y tiempos para el automata
         self.coordenadas = CheckerCoordenada(**self.despachador.cargar_coordenadas)
@@ -51,7 +56,22 @@ class PipelineOrquestador:
         
         self.UI=PointCheckManagerPrime(self.config_visual)
 
+
+
+
+
+class ServiceTasks:
+
+    def __init__(self,ruta_config:Path):
+        self.paths = PathsArchivosCriticos(DescripcionArchivosCriticos())
         self.tareas_pendientes: list[TareaPendiente] = []
+        self.despachador = ConfigManager(ruta_config)
+        self.patrones = RegexpPatrones(self.despachador.cargar_patrones)
+        self.lista_fechas = lista_verdad(
+        self.despachador.cargar_bimestre_inicial,
+        self.despachador.cargar_bimestre_final,
+        self.patrones
+        )
 
     def generar_tareas_pendientes(self)->None:
         lista_tareas_pendientes:list[TareaPendiente]=[]

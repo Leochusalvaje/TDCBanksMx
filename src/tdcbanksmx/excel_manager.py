@@ -6,15 +6,13 @@ import win32com.client as win32
 from pathlib import Path
 from enum import Enum
 import win32gui, win32con
-from config import RegexpPatrones, TipoPatron
+from tdcbanksmx.config import RegexpPatrones, TipoPatron
 from typing import Any
-import exceptions as ex
+import tdcbanksmx.exceptions as ex
 import time
 
 
-class TipoLibro(Enum):
-    LIBRO_CONTROL ="libro_control"
-    LIBRO_CONSULTA ="libro_consulta"
+
 
 
 #solo en este esquema usaremos slots para optimizar el uso de memoria ya que esta clase se va a instanciar muchas veces para generar las tareas
@@ -39,6 +37,7 @@ class Pendiente:
 
 @dataclass(slots=True)
 class TareaPendiente:
+
     """Representa una tarea específica que el autómata debe ejecutar.
 
     Contiene la información necesaria para identificar el archivo Excel relacionado,
@@ -67,6 +66,8 @@ class TareaPendiente:
         return (f"Serie: {self.nombre_serie} | "
                 f"Archivo: {self.ruta_archivo_excel.name} | "
                 f"Pendientes: {len(self.diccionario_pendientes)}")
+
+
 class rutaCarpetas:
     """Maneja rutas y creación de carpetas/archivos para el proceso de consulta.
 
@@ -159,7 +160,9 @@ class ManagerPendientes:
 
 
 
-
+class TipoLibro(Enum):
+    LIBRO_CONTROL ="libro_control"
+    LIBRO_CONSULTA ="libro_consulta"
 
 class libroExcelManager:
     def __init__(self,libro:Any,patronValidador:RegexpPatrones,posicion_hoja_excel:int=1) -> None:

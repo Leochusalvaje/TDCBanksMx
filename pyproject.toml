@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tdcbanksmx"
+version = "0.1.0"
+description = "ETL de datos públicos de tarjetas de crédito de la CNBV: automatización de extracción, limpieza y almacenamiento."
+readme = "README.md"
+requires-python = ">=3.13"
+license = "BSD-3-Clause" 
+authors = [
+    { name = "Leonardo Vicente Muñoz Salazar" }]
+
+dependencies = ["pandas","numpy", "openpyxl","pyautogui","pywin32",]
+
+[project.optional-dependencies]
+dev = [ "pytest", "pytest-cov",]
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+tdcbanksmx = "tdcbanksmx.main:main"

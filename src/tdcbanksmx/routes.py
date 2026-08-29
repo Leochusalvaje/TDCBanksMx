@@ -1,11 +1,11 @@
 
 from pathlib import Path
-from config import Paths
+from tdcbanksmx.config import Paths
 import os
 
 
 
-RUTA_BASE = Path(__file__).parent.parent
+RUTA_BASE = Path(__file__).parent.parent.parent
 RUTA_PRIME=RUTA_BASE/"Routes"
 RUTA_DATA = RUTA_BASE  / "Data"
 RUTAS_DATA_TDC=RUTA_DATA/"datosTarjetasCredito"

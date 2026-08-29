@@ -6,3 +6,21 @@ venv/
 .env/
 .venv/
 env/
+informacion.log
+__pycache__/
+*.pyc
+Output/*
+!Output/.gitkeep
+
+metodos_excel.txt
+metodos_excel_hoja.txt
+extensions.txt
+documentacion/*
+
+# Artefactos de empaquetado de Python (regenerables con pip install -e .)
+*.egg-info/
+build/
+dist/
+
+# Vas a necesitar esta en cuanto empieces a correr pytest formalmente
+.pytest_cache/

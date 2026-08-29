@@ -1,6 +1,8 @@
 import logging
+import sys
 from pathlib import Path
-from orquestador import PipelineOrquestador
+from tdcbanksmx.orquestador import PipelineOrquestador
+from tdcbanksmx.cli import build_parser
 
 #Configuracion del nombre del logger para que se muestre en los logs siempre va despues de las importaciones solo en caso de utilizar decoradores poner antes del decorador
 logger=logging.getLogger("main")
@@ -18,18 +20,28 @@ def main():
 
     
     # Aquí es donde paths.verificar_todo() debería disparar los logs
+def configurar_logging(nivel=logging.DEBUG, modo_consola=True) -> None:
 
-if __name__ == "__main__":
-    # La configuración se hace UNA sola vez al principio
+    
+    """Configura los handlers globales de logging."""
     logging.basicConfig(
-        force=True,  # Asegura que esta configuración se aplique incluso si logging ya ha sido configurado por otro módulo
-        level=logging.DEBUG,
+        force=True,  # Sobrescribe cualquier configuración previa de logging
+        level=nivel,
         format='%(asctime)s - [%(name)s] - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler("informacion.log",mode='w',encoding='utf-8'), # Escribe en el archivo
-            #logging.StreamHandler()                # mostrar en consola
+            logging.FileHandler("informacion.log", mode='w', encoding='utf-8'),
+            logging.StreamHandler(sys.stdout) if modo_consola else None
         ]
-
     )
-    
+
+def main() -> None:
+    # 1. Configuras el logging global una sola vez al entrar
+    configurar_logging()
+
+    # 2. Parseas los argumentos y ejecutas el handler correspondiente
+    parser = build_parser()
+    args = parser.parse_args()
+    args.func(args)
+
+if __name__ == "__main__":
     main()

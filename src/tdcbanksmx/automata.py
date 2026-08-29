@@ -17,18 +17,17 @@ import win32com.client as win32
 import pyautogui
 import time
 import win32gui, win32con
-import routes as gv
 from pathlib import Path
 import pywintypes as wty
 import re
 from typing import Any,TYPE_CHECKING
-from config import RegexpPatrones, TipoPatron
-import exceptions as ex
+from tdcbanksmx.config import RegexpPatrones, TipoPatron
+import tdcbanksmx.exceptions as ex
 
-from excel_manager import TareaPendiente,ExcelManager,ManagerPendientes,TipoLibro
+from tdcbanksmx.excel_manager import TareaPendiente,ExcelManager,ManagerPendientes,TipoLibro
 
 if TYPE_CHECKING:
-    from config import RegexpPatrones
+    from tdcbanksmx.config import RegexpPatrones
 
 pyautogui.FAILSAFE = True
 

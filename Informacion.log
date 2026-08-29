@@ -1,14 +1,64 @@
-2026-06-04 23:44:09,891 - [main] - INFO - --- Iniciando validación de rutas ---
-2026-06-04 23:44:09,893 - [config] - INFO - Asegurando directorio: TDCBanksMx
-2026-06-04 23:44:09,893 - [config] - INFO - Asegurando directorio: TDCBanksMx\Data
-2026-06-04 23:44:09,893 - [config] - INFO - Asegurando directorio: TDCBanksMx\Data\datosTarjetasCredito
-2026-06-04 23:44:09,894 - [config] - INFO - Asegurando directorio: TDCBanksMx\Output
-2026-06-04 23:44:09,894 - [config] - INFO - Asegurando directorio: TDCBanksMx\Datasets
-2026-06-04 23:44:09,894 - [config] - INFO - Asegurando directorio: TDCBanksMx\scripts
-2026-06-04 23:44:09,894 - [config] - INFO - Archivo crítico encontrado en: TDCBanksMx\scripts\config.json
-2026-06-04 23:44:09,894 - [config] - INFO - Archivo crítico encontrado en: TDCBanksMx\Output\LibroControl.xlsx
-2026-06-04 23:44:09,895 - [config] - DEBUG - El string '202506' cumple con el patrón 'FECHA'
-2026-06-04 23:44:09,895 - [config] - DEBUG - El string '201106' cumple con el patrón 'FECHA'
-2026-06-04 23:44:09,895 - [Automata] - INFO - Bimestres contenidos en cada archivo excel de la CNBV: 85 Este parametro es crucial y se genera con los parametros del config.json ingresados por el USUARIO humano para el funcionamiento del automata, si no se esta extrayendo la cantidad correcta de bimestres revisar que las fechas de entrada sean correctas y que se este cumpliendo el patron establecido en la clase RegexpPatrones
-2026-06-04 23:44:09,896 - [Orquestador] - INFO - Analizando archivo: 040_12d_R1_Número de tarjetas de crédito por institución.xls
-2026-06-04 23:44:09,896 - [config] - INFO - Serie extraída: 040_12d_R1
+2026-08-26 23:05:49,758 - [tdcbanksmx.config] - WARNING - TDCBANKSMX_ROOT no está definida, usando ruta calculada: C:\Users\espar\Desktop\Portafolio\TDCBanksMx. Define la variable de entorno si esto no es correcto en tu máquina.
+2026-08-26 23:05:49,759 - [tdcbanksmx.config] - DEBUG - El string '202506' cumple con el patrón 'FECHA'
+2026-08-26 23:05:49,759 - [tdcbanksmx.config] - DEBUG - El string '201106' cumple con el patrón 'FECHA'
+2026-08-26 23:05:49,759 - [Automata] - INFO - Bimestres contenidos en cada archivo excel de la CNBV: 85 Este parametro es crucial y se genera con los parametros del config.json ingresados por el USUARIO humano para el funcionamiento del automata, si no se esta extrayendo la cantidad correcta de bimestres revisar que las fechas de entrada sean correctas y que se este cumpliendo el patron establecido en la clase RegexpPatrones
+2026-08-26 23:05:49,760 - [Orquestador] - INFO - Analizando archivo: 040_12d_R1_Número de tarjetas de crédito por institución.xls
+2026-08-26 23:05:49,760 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12d_R1
+2026-08-26 23:05:49,761 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12d_R1 | Archivo: 040_12d_R1_Número de tarjetas de crédito por institución.xls | Pendientes: 83
+2026-08-26 23:05:49,761 - [Orquestador] - INFO - Analizando archivo: 040_12d_R2_Saldo de tarjetas de crédito por institución.xls
+2026-08-26 23:05:49,761 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12d_R2
+2026-08-26 23:05:49,761 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12d_R2 | Archivo: 040_12d_R2_Saldo de tarjetas de crédito por institución.xls | Pendientes: 85
+2026-08-26 23:05:49,761 - [Orquestador] - INFO - Analizando archivo: 040_12e_R10_Distribución de tarjetas por probabilidad de incumplimiento.xls
+2026-08-26 23:05:49,762 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12e_R10
+2026-08-26 23:05:49,762 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12e_R10 | Archivo: 040_12e_R10_Distribución de tarjetas por probabilidad de incumplimiento.xls | Pendientes: 85
+2026-08-26 23:05:49,762 - [Orquestador] - INFO - Analizando archivo: 040_12e_R11_Distribución de tarjetas por impagos consecutivos.xls
+2026-08-26 23:05:49,762 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12e_R11
+2026-08-26 23:05:49,764 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12e_R11 | Archivo: 040_12e_R11_Distribución de tarjetas por impagos consecutivos.xls | Pendientes: 81
+2026-08-26 23:05:49,764 - [Orquestador] - INFO - Analizando archivo: 040_12e_R1_Distribución de tarjetas por límite de crédito.xls
+2026-08-26 23:05:49,764 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12e_R1
+2026-08-26 23:05:49,765 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12e_R1 | Archivo: 040_12e_R1_Distribución de tarjetas por límite de crédito.xls | Pendientes: 85
+2026-08-26 23:05:49,765 - [Orquestador] - INFO - Analizando archivo: 040_12e_R2_Distribución de tarjetas por porcentaje de uso de línea.xls
+2026-08-26 23:05:49,765 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12e_R2
+2026-08-26 23:05:49,765 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12e_R2 | Archivo: 040_12e_R2_Distribución de tarjetas por porcentaje de uso de línea.xls | Pendientes: 85
+2026-08-26 23:05:49,766 - [Orquestador] - INFO - Analizando archivo: 040_12e_R3_Distribución de tarjetas por porcentaje de pago mínimo exigido con respecto al saldo a pagar.xls
+2026-08-26 23:05:49,766 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12e_R3
+2026-08-26 23:05:49,766 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12e_R3 | Archivo: 040_12e_R3_Distribución de tarjetas por porcentaje de pago mínimo exigido con respecto al saldo a pagar.xls | Pendientes: 85
+2026-08-26 23:05:49,766 - [Orquestador] - INFO - Analizando archivo: 040_12e_R4_Distribución de tarjetas por porcentaje de pago realizado con respecto al saldo a pagar.xls
+2026-08-26 23:05:49,766 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12e_R4
+2026-08-26 23:05:49,767 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12e_R4 | Archivo: 040_12e_R4_Distribución de tarjetas por porcentaje de pago realizado con respecto al saldo a pagar.xls | Pendientes: 85
+2026-08-26 23:05:49,767 - [Orquestador] - INFO - Analizando archivo: 040_12e_R50_Distribución de tarjetas por porcentaje de pago mínimo respecto a la línea de crédito.xls
+2026-08-26 23:05:49,767 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12e_R50
+2026-08-26 23:05:49,767 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12e_R50 | Archivo: 040_12e_R50_Distribución de tarjetas por porcentaje de pago mínimo respecto a la línea de crédito.xls | Pendientes: 85
+2026-08-26 23:05:49,768 - [Orquestador] - INFO - Analizando archivo: 040_12e_R5_Distribución de tarjetas por porcentaje de pago realizado vs pago mínimo exigido.xls
+2026-08-26 23:05:49,768 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12e_R5
+2026-08-26 23:05:49,768 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12e_R5 | Archivo: 040_12e_R5_Distribución de tarjetas por porcentaje de pago realizado vs pago mínimo exigido.xls | Pendientes: 85
+2026-08-26 23:05:49,768 - [Orquestador] - INFO - Analizando archivo: 040_12e_R6_ConsumoRevolvente_Tarjetas_Pagominimo_vs_pagoRealizado.xls
+2026-08-26 23:05:49,768 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12e_R6
+2026-08-26 23:05:49,769 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12e_R6 | Archivo: 040_12e_R6_ConsumoRevolvente_Tarjetas_Pagominimo_vs_pagoRealizado.xls | Pendientes: 85
+2026-08-26 23:05:49,769 - [Orquestador] - INFO - Analizando archivo: 040_12e_R7_Consumo Revolvente Distribución de tarjetas por porcentaje de pago realizado vs pago para no generar intereses.xls
+2026-08-26 23:05:49,769 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12e_R7
+2026-08-26 23:05:49,769 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12e_R7 | Archivo: 040_12e_R7_Consumo Revolvente Distribución de tarjetas por porcentaje de pago realizado vs pago para no generar intereses.xls | Pendientes: 85
+2026-08-26 23:05:49,769 - [Orquestador] - INFO - Analizando archivo: 040_12e_R8_Consumo Revolvente Distribución por meses desde apertura.xls
+2026-08-26 23:05:49,770 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12e_R8
+2026-08-26 23:05:49,770 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12e_R8 | Archivo: 040_12e_R8_Consumo Revolvente Distribución por meses desde apertura.xls | Pendientes: 85
+2026-08-26 23:05:49,770 - [Orquestador] - INFO - Analizando archivo: 040_12e_R9_Consumo Revolvente Distribución de tarjetas por pérdida esperada.xls
+2026-08-26 23:05:49,770 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12e_R9
+2026-08-26 23:05:49,770 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12e_R9 | Archivo: 040_12e_R9_Consumo Revolvente Distribución de tarjetas por pérdida esperada.xls | Pendientes: 85
+2026-08-26 23:05:49,771 - [Orquestador] - INFO - Analizando archivo: 040_12h_R1_Tasas de interés por pérdida esperada.xls
+2026-08-26 23:05:49,771 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12h_R1
+2026-08-26 23:05:49,771 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12h_R1 | Archivo: 040_12h_R1_Tasas de interés por pérdida esperada.xls | Pendientes: 85
+2026-08-26 23:05:49,771 - [Orquestador] - INFO - Analizando archivo: 040_12h_R2_Porcentaje de uso de línea por pérdida esperada.xls
+2026-08-26 23:05:49,771 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12h_R2
+2026-08-26 23:05:49,772 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12h_R2 | Archivo: 040_12h_R2_Porcentaje de uso de línea por pérdida esperada.xls | Pendientes: 85
+2026-08-26 23:05:49,772 - [Orquestador] - INFO - Analizando archivo: 040_12h_R3_Porcentaje de pago mínimo entre saldo a pagar por pérdida esperada.xls
+2026-08-26 23:05:49,772 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12h_R3
+2026-08-26 23:05:49,772 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12h_R3 | Archivo: 040_12h_R3_Porcentaje de pago mínimo entre saldo a pagar por pérdida esperada.xls | Pendientes: 85
+2026-08-26 23:05:49,773 - [Orquestador] - INFO - Analizando archivo: 040_12h_R5_Porcentaje de pago realizado entre pago mínimo por pérdida esperada.xls
+2026-08-26 23:05:49,773 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12h_R5
+2026-08-26 23:05:49,773 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12h_R5 | Archivo: 040_12h_R5_Porcentaje de pago realizado entre pago mínimo por pérdida esperada.xls | Pendientes: 85
+2026-08-26 23:05:49,773 - [Orquestador] - INFO - Analizando archivo: 040_12h_R8_Impagos consecutivos por pérdida esperada.xls
+2026-08-26 23:05:49,774 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12h_R8
+2026-08-26 23:05:49,774 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12h_R8 | Archivo: 040_12h_R8_Impagos consecutivos por pérdida esperada.xls | Pendientes: 85
+2026-08-26 23:05:49,774 - [Orquestador] - INFO - Analizando archivo: 040_12h_R9_Meses transcurridos desde la apertura por pérdida esperada.xls
+2026-08-26 23:05:49,776 - [tdcbanksmx.config] - INFO - Serie extraída: 040_12h_R9
+2026-08-26 23:05:49,778 - [ExcelManager] - INFO - Tarea lista para ejecución: Serie: 040_12h_R9 | Archivo: 040_12h_R9_Meses transcurridos desde la apertura por pérdida esperada.xls | Pendientes: 85

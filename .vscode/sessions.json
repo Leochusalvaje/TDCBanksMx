@@ -1,54 +1,35 @@
 {
   "$schema": "https://cdn.statically.io/gh/nguyenngoclongdev/cdn/main/schema/v11/terminal-keeper.json",
   "theme": "tribe",
-  "active": "default",
+  "active": "python-dev",
   "activateOnStartup": true,
   "keepExistingTerminals": false,
   "sessions": {
-    "default": [
+    "python-dev": [
       {
-        "name": "hello",
+        "name": "venv",
+        "icon": "python",
+        "color": "terminal.ansiBlue",
         "autoExecuteCommands": true,
-        "icon": "person",
-        "color": "terminal.ansiGreen",
         "commands": [
-          "echo hello"
+          ".venv\\Scripts\\Activate.ps1"
         ]
       },
-      [
-        {
-          "name": "docker:ros",
-          "commands": [
-            ""
-          ]
-        },
-        {
-          "name": "docker:k8s",
-          "commands": [
-            ""
-          ]
-        }
-      ],
-      [
-        {
-          "name": "docker:nats",
-          "commands": [
-            ""
-          ]
-        },
-        {
-          "name": "docker:fleet",
-          "commands": [
-            ""
-          ]
-        }
-      ]
-    ],
-    "saved-session": [
       {
-        "name": "connect",
+        "name": "git",
+        "icon": "git-branch",
+        "color": "terminal.ansiYellow",
         "commands": [
           ""
+        ]
+      },
+      {
+        "name": "tests",
+        "icon": "beaker",
+        "color": "terminal.ansiGreen",
+        "autoExecuteCommands": true,
+        "commands": [
+          ".venv\\Scripts\\Activate.ps1"
         ]
       }
     ]
